@@ -111,14 +111,28 @@ const getToken = async (): Promise<void> => {
         throw new Error("Falta el Client ID. Ve a Ajustes (arriba derecha) -> Google Config.");
     }
 
+    // Intentar recuperar token de localStorage para evitar parpadeos
+    const storedToken = localStorage.getItem('google_access_token');
+    const storedExpiry = localStorage.getItem('google_token_expiry');
+    const now = Date.now();
+
+    if (storedToken && storedExpiry && now < parseInt(storedExpiry)) {
+        window.gapi.client.setToken({ access_token: storedToken });
+        return;
+    }
+
     return new Promise((resolve, reject) => {
         tokenClient.callback = async (resp: any) => {
             if (resp.error !== undefined) {
                 reject(resp);
             }
+            // Guardar token y expiración (resp.expires_in es en segundos)
+            localStorage.setItem('google_access_token', resp.access_token);
+            localStorage.setItem('google_token_expiry', (Date.now() + (resp.expires_in * 1000)).toString());
             resolve();
         };
 
+        // Si ya tenemos un token en el cliente de gapi, probamos refresh silencioso
         if (window.gapi.client.getToken() === null) {
             tokenClient.requestAccessToken({ prompt: 'consent' });
         } else {
@@ -278,8 +292,8 @@ export const fetchExpensesFromLog = async (): Promise<Expense[]> => {
         const rows = response.result.values;
         if (!rows) return [];
 
-        // Mapear filas a objetos Expense (evitando duplicados por ID si el log creció mucho)
-        const expenseMap = new Map<string, Expense>();
+        // Mapear filas a objetos Expense con el nombre del mes para asociarlo después
+        const expenseMap = new Map<string, Expense & { monthName?: string }>();
         rows.forEach((row: any) => {
             const [id, date, title, category, payer, amount, monthName] = row;
             expenseMap.set(id, {
@@ -287,11 +301,12 @@ export const fetchExpensesFromLog = async (): Promise<Expense[]> => {
                 category: category as Category,
                 payer: payer as User,
                 amount: parseFloat(amount),
-                monthId: "" // El monthId local se regenerará o asociará por nombre
+                monthId: "", // Se asociará en App.tsx usando monthName
+                monthName: monthName
             });
         });
 
-        return Array.from(expenseMap.values());
+        return Array.from(expenseMap.values()) as Expense[];
     } catch (error) {
         console.error("Error fetching from log:", error);
         return [];

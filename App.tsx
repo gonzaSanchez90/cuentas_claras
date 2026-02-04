@@ -50,45 +50,6 @@ const App: React.FC = () => {
     // PWA Install Prompt
     const [installPrompt, setInstallPrompt] = useState<any>(null);
 
-    // --- Persistence ---
-    useEffect(() => {
-        const storedMonths = localStorage.getItem('splitSmart_months');
-        const storedExpenses = localStorage.getItem('splitSmart_expenses');
-        if (storedMonths) setMonths(JSON.parse(storedMonths));
-        if (storedExpenses) setExpenses(JSON.parse(storedExpenses));
-
-        // Initialize Google Scripts
-        initGoogleClient().catch(console.error);
-        initGis().catch(console.error);
-
-        // Listen for PWA install event
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            setInstallPrompt(e);
-        });
-    }, []);
-
-    useEffect(() => {
-        localStorage.setItem('splitSmart_months', JSON.stringify(months));
-        localStorage.setItem('splitSmart_expenses', JSON.stringify(expenses));
-    }, [months, expenses]);
-
-    // --- Derived Data ---
-    const activeMonth = useMemo(() =>
-        months.find(m => m.id === activeMonthId),
-        [months, activeMonthId]);
-
-    const activeExpenses = useMemo(() =>
-        expenses
-            .filter(e => e.monthId === activeMonthId)
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-        [expenses, activeMonthId]);
-
-    const activeBalance = useMemo(() => {
-        if (!activeMonth) return null;
-        return calculateBalance(activeExpenses, activeMonth.splitRatio);
-    }, [activeExpenses, activeMonth]);
-
     // --- Handlers ---
 
     const handleCreateMonth = (name: string, ratio: number) => {
@@ -180,26 +141,43 @@ const App: React.FC = () => {
     };
 
     const handlePullFromLog = async () => {
+        // Solo sincronizamos si hay un Client ID configurado para evitar ruidos
+        if (!localStorage.getItem('google_client_id')) return;
+
         setIsSyncing(true);
         try {
             const remoteExpenses = await fetchExpensesFromLog();
             if (remoteExpenses.length === 0) {
-                setSyncStatus({ msg: "No se encontraron gastos en el respaldo de Excel.", type: 'error' });
+                // No mostramos error en auto-sync para no molestar
+                console.log("No remote expenses found.");
                 return;
             }
 
-            // Mezclar con los locales evitando duplicados por ID
+            // Mapear gastos remotos a monthId locales comparando nombres de mes
             const localIds = new Set(expenses.map((e: Expense) => e.id));
-            const newExpenses = remoteExpenses.filter((e: Expense) => !localIds.has(e.id));
+            const recoveredExpenses: Expense[] = [];
 
-            if (newExpenses.length === 0) {
-                setSyncStatus({ msg: "Ya tienes todos los gastos sincronizados.", type: 'success' });
-            } else {
-                setExpenses([...expenses, ...newExpenses]);
-                setSyncStatus({ msg: `¡Éxito! Se recuperaron ${newExpenses.length} gastos desde Excel.`, type: 'success' });
+            remoteExpenses.forEach((re: any) => {
+                if (!localIds.has(re.id)) {
+                    // Buscar el mes local que coincida con el monthName del remolque
+                    const matchingMonth = months.find(m => m.name === re.monthName);
+                    if (matchingMonth) {
+                        recoveredExpenses.push({
+                            ...re,
+                            monthId: matchingMonth.id
+                        });
+                    }
+                }
+            });
+
+            if (recoveredExpenses.length > 0) {
+                setExpenses(prev => [...prev, ...recoveredExpenses]);
+                setSyncStatus({ msg: `¡Éxito! Se recuperaron ${recoveredExpenses.length} gastos nuevos desde Excel.`, type: 'success' });
             }
         } catch (error: any) {
-            setSyncStatus({ msg: "Error al recuperar datos: " + error.message, type: 'error' });
+            console.error("Error al recuperar datos:", error);
+            // Solo mostramos error si fue una acción manual (o si es crítico)
+            // setSyncStatus({ msg: "Error al recuperar datos: " + error.message, type: 'error' });
         } finally {
             setIsSyncing(false);
         }
@@ -224,6 +202,52 @@ const App: React.FC = () => {
             setIsSyncing(false);
         }
     };
+
+    // --- Persistence & Sync Effects ---
+    useEffect(() => {
+        const storedMonths = localStorage.getItem('splitSmart_months');
+        const storedExpenses = localStorage.getItem('splitSmart_expenses');
+        if (storedMonths) setMonths(JSON.parse(storedMonths));
+        if (storedExpenses) setExpenses(JSON.parse(storedExpenses));
+
+        // Initialize Google Scripts
+        initGoogleClient().catch(console.error);
+        initGis().catch(console.error);
+
+        // Listen for PWA install event
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            setInstallPrompt(e);
+        });
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem('splitSmart_months', JSON.stringify(months));
+        localStorage.setItem('splitSmart_expenses', JSON.stringify(expenses));
+    }, [months, expenses]);
+
+    // --- Auto-Sync from Excel when entering a month ---
+    useEffect(() => {
+        if (activeMonthId && months.length > 0) {
+            handlePullFromLog();
+        }
+    }, [activeMonthId]);
+
+    // --- Derived Data ---
+    const activeMonth = useMemo(() =>
+        months.find(m => m.id === activeMonthId),
+        [months, activeMonthId]);
+
+    const activeExpenses = useMemo(() =>
+        expenses
+            .filter(e => e.monthId === activeMonthId)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+        [expenses, activeMonthId]);
+
+    const activeBalance = useMemo(() => {
+        if (!activeMonth) return null;
+        return calculateBalance(activeExpenses, activeMonth.splitRatio);
+    }, [activeExpenses, activeMonth]);
 
     // --- Render: Dashboard (Home) ---
     if (!activeMonthId) {
