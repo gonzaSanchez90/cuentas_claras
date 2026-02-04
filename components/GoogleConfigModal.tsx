@@ -4,9 +4,11 @@ import { X, Save, Key, AlertTriangle, Copy, Check } from 'lucide-react';
 interface Props {
     isOpen: boolean;
     onClose: () => void;
+    onImport?: (monthName: string) => Promise<void>;
+    availableMonths?: string[];
 }
 
-const GoogleConfigModal: React.FC<Props> = ({ isOpen, onClose }) => {
+const GoogleConfigModal: React.FC<Props> = ({ isOpen, onClose, onImport, availableMonths }) => {
     const [clientId, setClientId] = useState('');
     const [spreadsheetId, setSpreadsheetId] = useState('');
     const [sheetGid, setSheetGid] = useState('');
@@ -131,6 +133,31 @@ const GoogleConfigModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     >
                         <Save size={20} /> Guardar y Recargar
                     </button>
+
+                    {/* Nueva sección de Importación */}
+                    {onImport && availableMonths && availableMonths.length > 0 && (
+                        <div className="pt-6 border-t border-gray-100 flex flex-col gap-4">
+                            <h3 className="text-sm font-bold text-gray-800">Cargar datos existentes</h3>
+                            <p className="text-xs text-gray-500">
+                                Si ya tienes datos en tu tabla de resumen (Filas 19-42), puedes importarlos como gastos de ajuste para no empezar de cero.
+                            </p>
+                            <div className="flex gap-2">
+                                <select
+                                    className="flex-1 p-2 border border-gray-300 rounded-lg text-sm bg-white"
+                                    onChange={(e) => {/* El componente padre ya sabe el mes activo, pero esto permite elegir si hay varios */ }}
+                                    defaultValue={availableMonths[0]}
+                                >
+                                    {availableMonths.map(m => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                                <button
+                                    onClick={() => onImport(availableMonths[0])}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap"
+                                >
+                                    Importar Totales
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

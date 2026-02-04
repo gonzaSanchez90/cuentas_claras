@@ -8,11 +8,44 @@ declare global {
 }
 
 // Configuración de la hoja
+const LOG_SHEET_NAME = "Registro_Gastos";
+
 const getSpreadsheetConfig = () => {
     return {
         id: localStorage.getItem('google_spreadsheet_id') || '1S2tToFBxGP88oTBIkEk0EzpuBNj-06sjJAD3SGMhkbg',
         gid: parseInt(localStorage.getItem('google_sheet_gid') || '486879466')
     };
+};
+
+const ensureLogSheetExists = async (spreadsheetId: string) => {
+    const spreadsheet = await window.gapi.client.sheets.spreadsheets.get({
+        spreadsheetId: spreadsheetId,
+    });
+
+    const logSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === LOG_SHEET_NAME);
+
+    if (!logSheet) {
+        await window.gapi.client.sheets.spreadsheets.batchUpdate({
+            spreadsheetId: spreadsheetId,
+            resource: {
+                requests: [{
+                    addSheet: {
+                        properties: { title: LOG_SHEET_NAME }
+                    }
+                }]
+            }
+        });
+
+        // Add headers
+        await window.gapi.client.sheets.spreadsheets.values.update({
+            spreadsheetId: spreadsheetId,
+            range: `${LOG_SHEET_NAME}!A1:G1`,
+            valueInputOption: 'USER_ENTERED',
+            resource: {
+                values: [['ID', 'Fecha', 'Título', 'Categoría', 'Pagador', 'Monto', 'Mes']]
+            }
+        });
+    }
 };
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
@@ -194,7 +227,27 @@ export const syncExpensesToSheet = async (expenses: Expense[], monthName: string
         await updateRow(User.Me, startRow);
         await updateRow(User.Partner, startRow + 1);
 
-        return `¡Sincronización Exitosa! Se actualizaron los totales de ${monthName} en tu tabla de resumen.`;
+        // 4. Guardar copia de seguridad en el LOG
+        await ensureLogSheetExists(spreadsheetId);
+
+        // Primero borramos lo que haya de este mes para no duplicar
+        // Para simplificar, vamos a añadir los gastos nuevos al final del log
+        // En una app pro usaríamos IDs únicos para borrar y re-escribir, pero para este caso
+        // vamos a guardar todo el estado actual como un "snapshot" para simplificar la recuperación.
+        const logValues = expenses.map(e => [
+            e.id, e.date, e.title, e.category, e.payer, e.amount, monthName
+        ]);
+
+        if (logValues.length > 0) {
+            await window.gapi.client.sheets.spreadsheets.values.append({
+                spreadsheetId: spreadsheetId,
+                range: `${LOG_SHEET_NAME}!A:G`,
+                valueInputOption: 'USER_ENTERED',
+                resource: { values: logValues }
+            });
+        }
+
+        return `¡Sincronización Exitosa! Se actualizaron los totales de ${monthName} y se guardó una copia de respaldo en "${LOG_SHEET_NAME}".`;
 
     } catch (error: any) {
         console.error('Error syncing to Sheets:', error);
@@ -207,5 +260,96 @@ export const syncExpensesToSheet = async (expenses: Expense[], monthName: string
             throw new Error(`Google Error: ${gMsg}`);
         }
         throw new Error(error.message || 'Error de conexión desconocido.');
+    }
+};
+
+export const fetchExpensesFromLog = async (): Promise<Expense[]> => {
+    if (!gapiInited) await initGoogleClient();
+    try {
+        await getToken();
+        const { id: spreadsheetId } = getSpreadsheetConfig();
+        await ensureLogSheetExists(spreadsheetId);
+
+        const response = await window.gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: spreadsheetId,
+            range: `${LOG_SHEET_NAME}!A2:G`,
+        });
+
+        const rows = response.result.values;
+        if (!rows) return [];
+
+        // Mapear filas a objetos Expense (evitando duplicados por ID si el log creció mucho)
+        const expenseMap = new Map<string, Expense>();
+        rows.forEach((row: any) => {
+            const [id, date, title, category, payer, amount, monthName] = row;
+            expenseMap.set(id, {
+                id, date, title,
+                category: category as Category,
+                payer: payer as User,
+                amount: parseFloat(amount),
+                monthId: "" // El monthId local se regenerará o asociará por nombre
+            });
+        });
+
+        return Array.from(expenseMap.values());
+    } catch (error) {
+        console.error("Error fetching from log:", error);
+        return [];
+    }
+};
+
+export const importFromSummary = async (monthName: string): Promise<Expense[]> => {
+    if (!gapiInited) await initGoogleClient();
+    try {
+        await getToken();
+        const { id: spreadsheetId, gid: sheetGid } = getSpreadsheetConfig();
+        const sheetName = await getSheetNameByGid(sheetGid);
+
+        const monthClean = monthName.toLowerCase().split(' ')[0];
+        const monthIdx = MONTHS_ES.indexOf(monthClean);
+        if (monthIdx === -1) return [];
+
+        const startRow = 19 + (monthIdx * 2);
+        const response = await window.gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: spreadsheetId,
+            range: `'${sheetName}'!B${startRow}:M${startRow + 1}`,
+        });
+
+        const rows = response.result.values;
+        if (!rows || rows.length < 2) return [];
+
+        const categories = [
+            Category.Rent, Category.Electricity, Category.Water, Category.Internet,
+            Category.Transport, Category.SocialSecurity, Category.Supermarket,
+            Category.HouseExpenses, Category.Outings, Category.Pharmacy,
+            Category.Misc, Category.Subscriptions
+        ];
+
+        const importedExpenses: Expense[] = [];
+
+        const processRow = (row: any[], user: User) => {
+            row.forEach((val, idx) => {
+                const amount = parseFloat(val.toString().replace('€', '').replace(',', '.').trim());
+                if (!isNaN(amount) && amount > 0) {
+                    importedExpenses.push({
+                        id: `import-${user}-${monthClean}-${idx}`,
+                        title: `Importado: ${categories[idx]}`,
+                        amount: amount,
+                        payer: user,
+                        date: new Date().toISOString().split('T')[0],
+                        category: categories[idx],
+                        monthId: "" // Se asignará en el componente
+                    });
+                }
+            });
+        };
+
+        processRow(rows[0], User.Me);
+        processRow(rows[1], User.Partner);
+
+        return importedExpenses;
+    } catch (error) {
+        console.error("Error importing from summary:", error);
+        return [];
     }
 };

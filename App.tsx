@@ -10,7 +10,7 @@ import AddExpenseModal from './components/AddExpenseModal';
 import SettingsModal from './components/SettingsModal';
 import GoogleConfigModal from './components/GoogleConfigModal';
 import { analyzeSpendingHabits } from './services/geminiService';
-import { syncExpensesToSheet, initGoogleClient, initGis } from './services/googleSheetsService';
+import { syncExpensesToSheet, initGoogleClient, initGis, fetchExpensesFromLog, importFromSummary } from './services/googleSheetsService';
 
 // --- Helper Functions ---
 
@@ -179,6 +179,52 @@ const App: React.FC = () => {
         setAiInsight(result);
     };
 
+    const handlePullFromLog = async () => {
+        setIsSyncing(true);
+        try {
+            const remoteExpenses = await fetchExpensesFromLog();
+            if (remoteExpenses.length === 0) {
+                setSyncStatus({ msg: "No se encontraron gastos en el respaldo de Excel.", type: 'error' });
+                return;
+            }
+
+            // Mezclar con los locales evitando duplicados por ID
+            const localIds = new Set(expenses.map((e: Expense) => e.id));
+            const newExpenses = remoteExpenses.filter((e: Expense) => !localIds.has(e.id));
+
+            if (newExpenses.length === 0) {
+                setSyncStatus({ msg: "Ya tienes todos los gastos sincronizados.", type: 'success' });
+            } else {
+                setExpenses([...expenses, ...newExpenses]);
+                setSyncStatus({ msg: `¡Éxito! Se recuperaron ${newExpenses.length} gastos desde Excel.`, type: 'success' });
+            }
+        } catch (error: any) {
+            setSyncStatus({ msg: "Error al recuperar datos: " + error.message, type: 'error' });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
+    const handleImportTotals = async (monthName: string) => {
+        if (!activeMonthId) return;
+        setIsSyncing(true);
+        try {
+            const imported = await importFromSummary(monthName);
+            if (imported.length === 0) {
+                setSyncStatus({ msg: "No se encontraron datos para importar en esa hoja/mes.", type: 'error' });
+                return;
+            }
+
+            const withMonthId = imported.map((e: Expense) => ({ ...e, monthId: activeMonthId }));
+            setExpenses([...expenses, ...withMonthId]);
+            setSyncStatus({ msg: `¡Listo! Se importaron ${imported.length} totales como gastos de ajuste.`, type: 'success' });
+        } catch (error: any) {
+            setSyncStatus({ msg: "Error al importar: " + error.message, type: 'error' });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     // --- Render: Dashboard (Home) ---
     if (!activeMonthId) {
         return (
@@ -252,6 +298,8 @@ const App: React.FC = () => {
                 <GoogleConfigModal
                     isOpen={isGoogleConfigOpen}
                     onClose={() => setIsGoogleConfigOpen(false)}
+                    onImport={months.length > 0 ? handleImportTotals : undefined}
+                    availableMonths={months.map(m => m.name)}
                 />
             </div>
         );
@@ -352,6 +400,15 @@ const App: React.FC = () => {
                     >
                         <PieChart size={18} /> IA Insight
                     </button>
+
+                    <button
+                        onClick={handlePullFromLog}
+                        disabled={isSyncing}
+                        className="col-span-2 bg-blue-50 border border-blue-200 text-blue-700 py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 disabled:opacity-70"
+                    >
+                        {isSyncing ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
+                        Recuperar Datos desde Excel
+                    </button>
                 </div>
 
                 {/* AI Insight Box */}
@@ -437,6 +494,8 @@ const App: React.FC = () => {
             <GoogleConfigModal
                 isOpen={isGoogleConfigOpen}
                 onClose={() => setIsGoogleConfigOpen(false)}
+                onImport={activeMonth ? () => handleImportTotals(activeMonth.name) : undefined}
+                availableMonths={activeMonth ? [activeMonth.name] : []}
             />
         </div>
     );
