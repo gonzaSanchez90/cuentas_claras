@@ -1,4 +1,4 @@
-import { Expense, User } from '../types';
+import { Expense, User, Category } from '../types';
 
 declare global {
     interface Window {
@@ -111,6 +111,24 @@ const getSheetNameByGid = async (gid: number): Promise<string> => {
     }
 };
 
+const MONTHS_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+const CATEGORY_TO_COL = {
+    [Category.Rent]: 'B',
+    [Category.Electricity]: 'C',
+    [Category.Water]: 'D',
+    [Category.Internet]: 'E',
+    [Category.Phone]: 'E',
+    [Category.Transport]: 'F',
+    [Category.SocialSecurity]: 'G',
+    [Category.Supermarket]: 'H',
+    [Category.HouseExpenses]: 'I',
+    [Category.Outings]: 'J',
+    [Category.Pharmacy]: 'K',
+    [Category.Misc]: 'L',
+    [Category.Subscriptions]: 'M'
+};
+
 export const syncExpensesToSheet = async (expenses: Expense[], monthName: string): Promise<string> => {
     if (!gapiInited) await initGoogleClient();
 
@@ -119,45 +137,75 @@ export const syncExpensesToSheet = async (expenses: Expense[], monthName: string
 
         const { id: spreadsheetId, gid: sheetGid } = getSpreadsheetConfig();
         const sheetName = await getSheetNameByGid(sheetGid);
-        const range = `'${sheetName}'!A:F`;
 
-        // Formato [Fecha, Concepto, Categoría, Pagador, Monto, Mes]
-        const values = expenses.map(e => [
-            e.date,
-            e.title,
-            e.category,
-            e.payer === User.Me ? 'Yo' : 'Pareja',
-            e.amount,
-            monthName
-        ]);
+        // 1. Identificar el mes y calcular fila base
+        const monthClean = monthName.toLowerCase().split(' ')[0];
+        const monthIdx = MONTHS_ES.indexOf(monthClean);
+        if (monthIdx === -1) throw new Error("No se pudo identificar el mes para el resumen.");
 
-        if (values.length === 0) return "No hay gastos para sincronizar.";
+        const startRow = 19 + (monthIdx * 2); // Row 19 is Enero Gonzalo
 
-        const response = await window.gapi.client.sheets.spreadsheets.values.append({
-            spreadsheetId: spreadsheetId,
-            range: range,
-            valueInputOption: 'USER_ENTERED',
-            insertDataOption: 'INSERT_ROWS',
-            resource: { values: values },
+        // 2. Agrupar totales por Payer y Categoría
+        const totals: Record<string, Record<string, number>> = {
+            [User.Me]: {},
+            [User.Partner]: {}
+        };
+
+        // Inicializar todas las categorías en 0 para limpiar si es necesario
+        Object.values(Category).forEach(cat => {
+            totals[User.Me][cat] = 0;
+            totals[User.Partner][cat] = 0;
         });
 
-        return `¡Hecho! Se guardaron ${response.result.updates?.updatedRows} gastos en Excel.`;
+        expenses.forEach(e => {
+            if (totals[e.payer] && totals[e.payer][e.category] !== undefined) {
+                totals[e.payer][e.category] += e.amount;
+            }
+        });
+
+        // 3. Preparar Batch Update para ambas filas (Me y Partner)
+        const updateRow = async (user: User, rowNum: number) => {
+            // Construimos un array con los valores ordenados de la B a la M
+            // B=Alquiler, C=Luz, D=Agua, E=Internet, F=Transp, G=ObraSoc, H=Super, I=Casa, J=Salidas, K=Farma, L=Varios, M=Suscrip
+            const rowValues = [
+                totals[user][Category.Rent],
+                totals[user][Category.Electricity],
+                totals[user][Category.Water],
+                totals[user][Category.Internet] + totals[user][Category.Phone],
+                totals[user][Category.Transport],
+                totals[user][Category.SocialSecurity],
+                totals[user][Category.Supermarket],
+                totals[user][Category.HouseExpenses],
+                totals[user][Category.Outings],
+                totals[user][Category.Pharmacy],
+                totals[user][Category.Misc],
+                totals[user][Category.Subscriptions]
+            ];
+
+            const range = `'${sheetName}'!B${rowNum}:M${rowNum}`;
+            await window.gapi.client.sheets.spreadsheets.values.update({
+                spreadsheetId: spreadsheetId,
+                range: range,
+                valueInputOption: 'USER_ENTERED',
+                resource: { values: [rowValues] },
+            });
+        };
+
+        await updateRow(User.Me, startRow);
+        await updateRow(User.Partner, startRow + 1);
+
+        return `¡Sincronización Exitosa! Se actualizaron los totales de ${monthName} en tu tabla de resumen.`;
 
     } catch (error: any) {
         console.error('Error syncing to Sheets:', error);
-
-        if (error.message && error.message.includes("Falta el Client ID")) {
-            throw error;
-        }
-
-        // Errores comunes de Google
+        // ... mismo manejo de errores ...
+        if (error.message && error.message.includes("Falta el Client ID")) throw error;
         if (error.result?.error?.message) {
             const gMsg = error.result.error.message;
             if (gMsg.includes("origin_mismatch")) return "Error: La URL de la app no está autorizada en Google Cloud console.";
             if (gMsg.includes("popup_closed_by_user")) return "Cancelaste el inicio de sesión.";
             throw new Error(`Google Error: ${gMsg}`);
         }
-
         throw new Error(error.message || 'Error de conexión desconocido.');
     }
 };
