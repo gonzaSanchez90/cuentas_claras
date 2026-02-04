@@ -8,7 +8,8 @@ export default defineConfig(({ mode }) => {
         plugins: [react()],
         define: {
             // Esto permite que el código que usa process.env.API_KEY funcione en el navegador
-            'process.env.API_KEY': JSON.stringify(env.API_KEY)
+            'process.env.API_KEY': JSON.stringify(env.API_KEY || env.VITE_API_KEY),
+            'import.meta.env.VITE_API_KEY': JSON.stringify(env.VITE_API_KEY || env.API_KEY)
         }
     }
 })

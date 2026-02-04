@@ -73,8 +73,8 @@ const GoogleConfigModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                 {copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} className="text-gray-500" />}
                             </button>
                         </div>
-                        <p className="text-[10px] text-blue-500 mt-2">
-                            * Pega esto en "Orígenes autorizados de JavaScript" en tu consola de Google Cloud.
+                        <p className="text-[10px] text-red-500 mt-2 font-bold animate-pulse">
+                            * IMPORTANTE: Si accedes desde una URL distinta a esta (ej: la de ramas de Vercel), Google bloqueará el acceso.
                         </p>
                     </div>
 
@@ -87,7 +87,7 @@ const GoogleConfigModal: React.FC<Props> = ({ isOpen, onClose }) => {
                         <ol className="list-decimal list-inside text-xs text-red-900 space-y-1 pl-1">
                             <li>Ve a "Pantalla de consentimiento" (OAuth consent screen).</li>
                             <li>Asegúrate de que esté en modo <strong>"Prueba" (Testing)</strong>.</li>
-                            <li>En <strong>"Test users"</strong>, agrega TU correo: <code>gonza.fede.sanchezg@gmail.com</code>.</li>
+                            <li>En <strong>"Test users"</strong>, agrega TU correo: <code>gonza.fede.sanchez@gmail.com</code>.</li>
                             <li><strong>IMPORTANTE:</strong> Si estás editando código, <a href={currentUrl} target="_blank" rel="noreferrer" className="underline font-bold">abre esta app en una PESTAÑA NUEVA</a> antes de loguearte.</li>
                         </ol>
                     </div>

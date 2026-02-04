@@ -2,7 +2,9 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { Category, User } from "../types";
 
 // Initialize Gemini client
-const genAI = new GoogleGenerativeAI(process.env.API_KEY || "");
+// Vite replaces import.meta.env.VITE_API_KEY with the actual value during build
+const apiKey = import.meta.env.VITE_API_KEY || (typeof process !== 'undefined' ? process.env.API_KEY : '');
+const genAI = new GoogleGenerativeAI(apiKey || "");
 
 const MODEL_NAME = "gemini-1.5-flash";
 
