@@ -16,7 +16,7 @@ const GoogleConfigModal: React.FC<Props> = ({ isOpen, onClose }) => {
     useEffect(() => {
         setClientId(localStorage.getItem('google_client_id') || '');
         setSpreadsheetId(localStorage.getItem('google_spreadsheet_id') || '1S2tToFBxGP88oTBIkEk0EzpuBNj-06sjJAD3SGMhkbg');
-        setSheetGid(localStorage.getItem('google_sheet_gid') || '486879466');
+        setSheetGid(localStorage.getItem('google_sheet_gid') || '579537604');
 
         // Detectar URL actual limpia (sin path, solo dominio y puerto)
         if (typeof window !== 'undefined') {
