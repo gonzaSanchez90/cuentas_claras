@@ -430,7 +430,7 @@ const App: React.FC = () => {
             <SettingsModal
                 isOpen={isSettingsModalOpen}
                 onClose={() => setIsSettingsModalOpen(false)}
-                config={activeMonth}
+                config={activeMonth || null}
                 onSave={handleUpdateMonth}
             />
 

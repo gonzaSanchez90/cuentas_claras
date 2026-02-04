@@ -1,10 +1,10 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Category, User } from "../types";
 
 // Initialize Gemini client
-const genAI = new GoogleGenerativeAI(process.env.API_KEY || "");
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const MODEL_NAME = "gemini-1.5-flash";
+const MODEL_NAME = "gemini-3-flash-preview";
 
 export const parseExpenseString = async (input: string): Promise<{
     title: string;
@@ -17,34 +17,32 @@ export const parseExpenseString = async (input: string): Promise<{
         const today = new Date().toISOString().split('T')[0];
         const categoriesList = Object.values(Category).join(", ");
 
-        const model = genAI.getGenerativeModel({
+        const response = await ai.models.generateContent({
             model: MODEL_NAME,
-            generationConfig: {
+            contents: `Extract expense details from this text: "${input}". 
+      Today is ${today}.
+      If payer is unclear, default to "Me".
+      Categories are strictly: ${categoriesList}.
+      Map "casa" or "home" to "In-house".
+      Return JSON.`,
+            config: {
                 responseMimeType: "application/json",
                 responseSchema: {
-                    type: SchemaType.OBJECT,
+                    type: Type.OBJECT,
                     properties: {
-                        title: { type: SchemaType.STRING },
-                        amount: { type: SchemaType.NUMBER },
-                        payer: { type: SchemaType.STRING, enum: ["Me", "Partner"] },
-                        category: { type: SchemaType.STRING, enum: Object.values(Category) },
-                        date: { type: SchemaType.STRING, description: "Format YYYY-MM-DD" },
+                        title: { type: Type.STRING },
+                        amount: { type: Type.NUMBER },
+                        payer: { type: Type.STRING, enum: ["Me", "Partner"] },
+                        category: { type: Type.STRING, enum: Object.values(Category) },
+                        date: { type: Type.STRING, description: "Format YYYY-MM-DD" },
                     },
                     required: ["title", "amount", "payer", "category", "date"],
                 },
             },
         });
 
-        const result = await model.generateContent(`Extract expense details from this text: "${input}". 
-      Today is ${today}.
-      If payer is unclear, default to "Me".
-      Categories are strictly: ${categoriesList}.
-      Map "casa" or "home" to "In-house".
-      Return JSON.`);
-
-        const text = result.response.text();
-        if (text) {
-            return JSON.parse(text);
+        if (response.text) {
+            return JSON.parse(response.text);
         }
         return null;
     } catch (error) {
@@ -57,10 +55,12 @@ export const analyzeSpendingHabits = async (expenses: any[]): Promise<string> =>
     try {
         const summary = expenses.map(e => `${e.date}: ${e.title} (${e.category}) - $${e.amount}`).join('\n');
 
-        const model = genAI.getGenerativeModel({ model: MODEL_NAME });
-        const result = await model.generateContent(`Analiza estos gastos y dame 3 insights breves y útiles sobre hábitos de consumo o anomalías. Sé amigable y directo (en Español).\n\n${summary}`);
+        const response = await ai.models.generateContent({
+            model: MODEL_NAME,
+            contents: `Analiza estos gastos y dame 3 insights breves y útiles sobre hábitos de consumo o anomalías. Sé amigable y directo (en Español).\n\n${summary}`,
+        });
 
-        return result.response.text() || "No se pudo generar el análisis.";
+        return response.text || "No se pudo generar el análisis.";
     } catch (error) {
         console.error("Gemini Analysis Error:", error);
         return "Error al conectar con la IA.";
