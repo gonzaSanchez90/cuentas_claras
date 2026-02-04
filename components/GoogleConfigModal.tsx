@@ -8,12 +8,15 @@ interface Props {
 
 const GoogleConfigModal: React.FC<Props> = ({ isOpen, onClose }) => {
     const [clientId, setClientId] = useState('');
+    const [spreadsheetId, setSpreadsheetId] = useState('');
+    const [sheetGid, setSheetGid] = useState('');
     const [currentUrl, setCurrentUrl] = useState('');
     const [copied, setCopied] = useState(false);
 
     useEffect(() => {
-        const stored = localStorage.getItem('google_client_id');
-        if (stored) setClientId(stored);
+        setClientId(localStorage.getItem('google_client_id') || '');
+        setSpreadsheetId(localStorage.getItem('google_spreadsheet_id') || '1S2tToFBxGP88oTBIkEk0EzpuBNj-06sjJAD3SGMhkbg');
+        setSheetGid(localStorage.getItem('google_sheet_gid') || '486879466');
 
         // Detectar URL actual limpia (sin path, solo dominio y puerto)
         if (typeof window !== 'undefined') {
@@ -22,8 +25,9 @@ const GoogleConfigModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }, [isOpen]);
 
     const handleSave = () => {
-        if (!clientId.trim()) return;
         localStorage.setItem('google_client_id', clientId.trim());
+        localStorage.setItem('google_spreadsheet_id', spreadsheetId.trim());
+        localStorage.setItem('google_sheet_gid', sheetGid.trim());
         window.location.reload();
     };
 
@@ -88,15 +92,37 @@ const GoogleConfigModal: React.FC<Props> = ({ isOpen, onClose }) => {
                         </ol>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Paso 2: Tu Client ID</label>
-                        <input
-                            type="text"
-                            value={clientId}
-                            onChange={(e) => setClientId(e.target.value)}
-                            placeholder="7803...apps.googleusercontent.com"
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-gray-900 text-xs font-mono break-all"
-                        />
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">Paso 2: Tu Client ID</label>
+                            <input
+                                type="text"
+                                value={clientId}
+                                onChange={(e) => setClientId(e.target.value)}
+                                placeholder="7803...apps.googleusercontent.com"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-gray-900 text-xs font-mono break-all"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">Paso 3: ID de la Hoja (Spreadsheet ID)</label>
+                            <input
+                                type="text"
+                                value={spreadsheetId}
+                                onChange={(e) => setSpreadsheetId(e.target.value)}
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-gray-900 text-xs font-mono break-all"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">Paso 4: GID de la Pestaña (Sheet GID)</label>
+                            <input
+                                type="text"
+                                value={sheetGid}
+                                onChange={(e) => setSheetGid(e.target.value)}
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-gray-900 text-xs font-mono break-all"
+                            />
+                        </div>
                     </div>
 
                     <button

@@ -7,9 +7,13 @@ declare global {
     }
 }
 
-// Tu hoja específica (CONSTANTE)
-const SPREADSHEET_ID = '1S2tToFBxGP88oTBIkEk0EzpuBNj-06sjJAD3SGMhkbg';
-const SHEET_GID = 486879466;
+// Configuración de la hoja
+const getSpreadsheetConfig = () => {
+    return {
+        id: localStorage.getItem('google_spreadsheet_id') || '1S2tToFBxGP88oTBIkEk0EzpuBNj-06sjJAD3SGMhkbg',
+        gid: parseInt(localStorage.getItem('google_sheet_gid') || '486879466')
+    };
+};
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
@@ -91,9 +95,10 @@ const getToken = async (): Promise<void> => {
 };
 
 const getSheetNameByGid = async (gid: number): Promise<string> => {
+    const { id: spreadsheetId } = getSpreadsheetConfig();
     try {
         const response = await window.gapi.client.sheets.spreadsheets.get({
-            spreadsheetId: SPREADSHEET_ID,
+            spreadsheetId: spreadsheetId,
         });
         const sheet = response.result.sheets?.find((s: any) => s.properties.sheetId === gid);
         if (!sheet) throw new Error(`Pestaña GID ${gid} no encontrada`);
@@ -112,7 +117,8 @@ export const syncExpensesToSheet = async (expenses: Expense[], monthName: string
     try {
         await getToken();
 
-        const sheetName = await getSheetNameByGid(SHEET_GID);
+        const { id: spreadsheetId, gid: sheetGid } = getSpreadsheetConfig();
+        const sheetName = await getSheetNameByGid(sheetGid);
         const range = `'${sheetName}'!A:F`;
 
         // Formato [Fecha, Concepto, Categoría, Pagador, Monto, Mes]
@@ -128,7 +134,7 @@ export const syncExpensesToSheet = async (expenses: Expense[], monthName: string
         if (values.length === 0) return "No hay gastos para sincronizar.";
 
         const response = await window.gapi.client.sheets.spreadsheets.values.append({
-            spreadsheetId: SPREADSHEET_ID,
+            spreadsheetId: spreadsheetId,
             range: range,
             valueInputOption: 'USER_ENTERED',
             insertDataOption: 'INSERT_ROWS',
