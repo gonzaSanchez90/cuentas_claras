@@ -11,7 +11,7 @@ declare global {
 const getSpreadsheetConfig = () => {
     return {
         id: localStorage.getItem('google_spreadsheet_id') || '1S2tToFBxGP88oTBIkEk0EzpuBNj-06sjJAD3SGMhkbg',
-        gid: parseInt(localStorage.getItem('google_sheet_gid') || '579537604')
+        gid: parseInt(localStorage.getItem('google_sheet_gid') || '486879466')
     };
 };
 
