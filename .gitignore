@@ -1,0 +1,8 @@
+node_modules
+server/node_modules
+server/cuentas_claras.db
+dist
+.env
+.env.local
+.DS_Store
+*.log
