@@ -13,7 +13,7 @@ const AuthScreen: React.FC<Props> = ({ onAuth }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  const API_URL = import.meta.env.DEV ? 'http://localhost:3001' : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

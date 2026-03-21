@@ -4,7 +4,7 @@
 // Este servicio centraliza TODAS las llamadas al servidor.
 // Cada función hace un fetch() al backend y devuelve los datos.
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.DEV ? 'http://localhost:3001' : '';
 
 // --- Helper para hacer requests autenticadas ---
 async function apiFetch(endpoint: string, options: RequestInit = {}) {
