@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Download, ArrowLeft, MoreVertical, PieChart, Info, Sheet, Loader2, Settings2, Share, DownloadCloud } from 'lucide-react';
+import { Plus, ArrowLeft, MoreVertical, PieChart, Info, Loader2, LogOut } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell
 } from 'recharts';
@@ -8,14 +8,11 @@ import { Expense, MonthConfig, User, BalanceResult } from './types';
 import MonthCard from './components/MonthCard';
 import AddExpenseModal from './components/AddExpenseModal';
 import SettingsModal from './components/SettingsModal';
-import GoogleConfigModal from './components/GoogleConfigModal';
+import AuthScreen from './components/AuthScreen';
 import { analyzeSpendingHabits } from './services/geminiService';
-import { syncExpensesToSheet, initGoogleClient, initGis, fetchExpensesFromLog, importFromSummary } from './services/googleSheetsService';
+import * as api from './services/apiService';
 
 // --- Helper Functions ---
-
-const generateId = () => Math.random().toString(36).substring(2, 9);
-
 const calculateBalance = (expenses: Expense[], ratio: number): BalanceResult => {
     const totalSpent = expenses.reduce((acc, curr) => acc + curr.amount, 0);
     const paidByMe = expenses.filter(e => e.payer === User.Me).reduce((acc, curr) => acc + curr.amount, 0);
@@ -30,208 +27,131 @@ const calculateBalance = (expenses: Expense[], ratio: number): BalanceResult => 
 };
 
 const App: React.FC = () => {
-    // --- State ---
+    // --- Auth State ---
+    const [isAuthenticated, setIsAuthenticated] = useState(api.isAuthenticated());
+    const [user, setUser] = useState<any>(null);
+    const [isLoadingInitial, setIsLoadingInitial] = useState(true);
+
+    // --- Data State ---
     const [months, setMonths] = useState<MonthConfig[]>([]);
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [activeMonthId, setActiveMonthId] = useState<string | null>(null);
 
-    // Modals
+    // --- Modals & UI State ---
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [isNewMonthModalOpen, setIsNewMonthModalOpen] = useState(false);
-    const [isGoogleConfigOpen, setIsGoogleConfigOpen] = useState(false);
-
     const [aiInsight, setAiInsight] = useState<string | null>(null);
-
-    // Sync State
     const [isSyncing, setIsSyncing] = useState(false);
-    const [syncStatus, setSyncStatus] = useState<{ msg: string, type: 'success' | 'error' } | null>(null);
 
-    // PWA Install Prompt
-    const [installPrompt, setInstallPrompt] = useState<any>(null);
+    // --- Bootstrapping Auth ---
+    useEffect(() => {
+        const checkAuth = async () => {
+            if (api.isAuthenticated()) {
+                try {
+                    const data = await api.getMe();
+                    setUser(data.user);
+                    setIsAuthenticated(true);
+                } catch (error) {
+                    console.error("Token inválido", error);
+                    api.logout();
+                    setIsAuthenticated(false);
+                }
+            }
+            setIsLoadingInitial(false);
+        };
+        checkAuth();
+    }, []);
+
+    // --- Fetch Data when Authenticated ---
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const loadData = async () => {
+            setIsSyncing(true);
+            try {
+                const [monthsData, expensesData] = await Promise.all([
+                    api.fetchMonths(),
+                    api.fetchExpenses()
+                ]);
+                setMonths(monthsData);
+                setExpenses(expensesData);
+            } catch (error) {
+                console.error("Error cargando datos:", error);
+            } finally {
+                setIsSyncing(false);
+            }
+        };
+
+        loadData();
+    }, [isAuthenticated]);
 
     // --- Handlers ---
-
-    const handleCreateMonth = (name: string, ratio: number) => {
-        const newMonth: MonthConfig = {
-            id: generateId(),
-            name,
-            splitRatio: ratio,
-            isClosed: false,
-            createdAt: Date.now()
-        };
-        setMonths([newMonth, ...months]);
-        setActiveMonthId(newMonth.id);
+    const handleAuth = (token: string, userData: any) => {
+        setUser(userData);
+        setIsAuthenticated(true);
     };
 
-    const handleUpdateMonth = (name: string, ratio: number) => {
-        if (!activeMonthId) return;
-        setMonths(months.map(m => m.id === activeMonthId ? { ...m, name, splitRatio: ratio } : m));
+    const handleLogout = () => {
+        api.logout();
+        setIsAuthenticated(false);
+        setUser(null);
+        setMonths([]);
+        setExpenses([]);
+        setActiveMonthId(null);
     };
 
-    const handleAddExpense = (expenseData: Omit<Expense, 'id' | 'monthId'>) => {
-        if (!activeMonthId) return;
-        const newExpense: Expense = {
-            ...expenseData,
-            id: generateId(),
-            monthId: activeMonthId
-        };
-        setExpenses([newExpense, ...expenses]);
-        setSyncStatus(null);
-    };
-
-    const handleGoogleSync = async () => {
-        if (!activeMonth) return;
-        setIsSyncing(true);
-        setSyncStatus(null);
+    const handleCreateMonth = async (name: string, ratio: number) => {
         try {
-            const msg = await syncExpensesToSheet(activeExpenses, activeMonth.name);
-            setSyncStatus({ msg, type: 'success' });
-        } catch (error: any) {
-            setSyncStatus({ msg: error.message || "Error desconocido", type: 'error' });
-            if (error.message?.includes('Client ID')) {
-                setIsGoogleConfigOpen(true);
-            }
-        } finally {
-            setIsSyncing(false);
+            const newMonth = await api.createMonth(name, ratio);
+            setMonths([newMonth, ...months]);
+            setActiveMonthId(newMonth.id);
+        } catch (error) {
+            console.error(error);
+            alert("Error al crear el mes");
         }
     };
 
-    const handleExportCSV = () => {
-        if (!activeMonth || !activeBalance) return;
-
-        const headers = ["Fecha", "Concepto", "Categoría", "Pagado Por", "Monto", "Mes"];
-        const rows = activeExpenses.map(e => [
-            e.date,
-            `"${e.title}"`,
-            e.category,
-            e.payer === User.Me ? "Yo" : "Pareja",
-            e.amount.toFixed(2),
-            activeMonth.name
-        ]);
-
-        const csvContent = "data:text/csv;charset=utf-8,"
-            + headers.join(",") + "\n"
-            + rows.map(r => r.join(",")).join("\n");
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `Gastos_${activeMonth.name.replace(/\s/g, '_')}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const handleUpdateMonth = async (name: string, ratio: number) => {
+        if (!activeMonthId) return;
+        try {
+            await api.updateMonth(activeMonthId, { name, splitRatio: ratio });
+            setMonths(months.map(m => m.id === activeMonthId ? { ...m, name, splitRatio: ratio } : m));
+        } catch (error) {
+            console.error(error);
+            alert("Error al actualizar");
+        }
     };
 
-    const handleInstallApp = () => {
-        if (!installPrompt) return;
-        installPrompt.prompt();
-        installPrompt.userChoice.then((choiceResult: any) => {
-            if (choiceResult.outcome === 'accepted') {
-                setInstallPrompt(null);
-            }
-        });
+    const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'monthId'>) => {
+        if (!activeMonthId) return;
+        try {
+            const newExpense = await api.createExpense({
+                monthId: activeMonthId,
+                title: expenseData.title,
+                amount: expenseData.amount,
+                payer: expenseData.payer,
+                date: expenseData.date,
+                category: expenseData.category,
+                note: expenseData.note
+            });
+            setExpenses([newExpense, ...expenses]);
+        } catch (error) {
+            console.error(error);
+            alert("Error al guardar el gasto");
+        }
     };
 
     const handleAnalyze = async () => {
         if (activeExpenses.length === 0) return;
-        setAiInsight("Analizando gastos...");
-        const result = await analyzeSpendingHabits(activeExpenses);
-        setAiInsight(result);
-    };
-
-    const handlePullFromLog = async () => {
-        // Solo sincronizamos si hay un Client ID configurado para evitar ruidos
-        if (!localStorage.getItem('google_client_id')) return;
-
-        setIsSyncing(true);
+        setAiInsight("Analizando gastos con IA...");
         try {
-            const remoteExpenses = await fetchExpensesFromLog();
-            if (remoteExpenses.length === 0) {
-                // No mostramos error en auto-sync para no molestar
-                console.log("No remote expenses found.");
-                return;
-            }
-
-            // Mapear gastos remotos a monthId locales comparando nombres de mes
-            const localIds = new Set(expenses.map((e: Expense) => e.id));
-            const recoveredExpenses: Expense[] = [];
-
-            remoteExpenses.forEach((re: any) => {
-                if (!localIds.has(re.id)) {
-                    // Buscar el mes local que coincida con el monthName del remolque
-                    const matchingMonth = months.find(m => m.name === re.monthName);
-                    if (matchingMonth) {
-                        recoveredExpenses.push({
-                            ...re,
-                            monthId: matchingMonth.id
-                        });
-                    }
-                }
-            });
-
-            if (recoveredExpenses.length > 0) {
-                setExpenses(prev => [...prev, ...recoveredExpenses]);
-                setSyncStatus({ msg: `¡Éxito! Se recuperaron ${recoveredExpenses.length} gastos nuevos desde Excel.`, type: 'success' });
-            }
-        } catch (error: any) {
-            console.error("Error al recuperar datos:", error);
-            // Solo mostramos error si fue una acción manual (o si es crítico)
-            // setSyncStatus({ msg: "Error al recuperar datos: " + error.message, type: 'error' });
-        } finally {
-            setIsSyncing(false);
+            const result = await analyzeSpendingHabits(activeExpenses);
+            setAiInsight(result);
+        } catch (error) {
+            setAiInsight("No se pudo analizar los gastos. Revisa tu API key.");
         }
     };
-
-    const handleImportTotals = async (monthName: string) => {
-        if (!activeMonthId) return;
-        setIsSyncing(true);
-        try {
-            const imported = await importFromSummary(monthName);
-            if (imported.length === 0) {
-                setSyncStatus({ msg: "No se encontraron datos para importar en esa hoja/mes.", type: 'error' });
-                return;
-            }
-
-            const withMonthId = imported.map((e: Expense) => ({ ...e, monthId: activeMonthId }));
-            setExpenses([...expenses, ...withMonthId]);
-            setSyncStatus({ msg: `¡Listo! Se importaron ${imported.length} totales como gastos de ajuste.`, type: 'success' });
-        } catch (error: any) {
-            setSyncStatus({ msg: "Error al importar: " + error.message, type: 'error' });
-        } finally {
-            setIsSyncing(false);
-        }
-    };
-
-    // --- Persistence & Sync Effects ---
-    useEffect(() => {
-        const storedMonths = localStorage.getItem('splitSmart_months');
-        const storedExpenses = localStorage.getItem('splitSmart_expenses');
-        if (storedMonths) setMonths(JSON.parse(storedMonths));
-        if (storedExpenses) setExpenses(JSON.parse(storedExpenses));
-
-        // Initialize Google Scripts
-        initGoogleClient().catch(console.error);
-        initGis().catch(console.error);
-
-        // Listen for PWA install event
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            setInstallPrompt(e);
-        });
-    }, []);
-
-    useEffect(() => {
-        localStorage.setItem('splitSmart_months', JSON.stringify(months));
-        localStorage.setItem('splitSmart_expenses', JSON.stringify(expenses));
-    }, [months, expenses]);
-
-    // --- Auto-Sync from Excel when entering a month ---
-    useEffect(() => {
-        if (activeMonthId && months.length > 0) {
-            handlePullFromLog();
-        }
-    }, [activeMonthId]);
 
     // --- Derived Data ---
     const activeMonth = useMemo(() =>
@@ -249,66 +169,76 @@ const App: React.FC = () => {
         return calculateBalance(activeExpenses, activeMonth.splitRatio);
     }, [activeExpenses, activeMonth]);
 
+    // --- Loading State ---
+    if (isLoadingInitial) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="animate-spin text-blue-600" size={40} />
+            </div>
+        );
+    }
+
+    // --- Auth State ---
+    if (!isAuthenticated) {
+        return <AuthScreen onAuth={handleAuth} />;
+    }
+
     // --- Render: Dashboard (Home) ---
     if (!activeMonthId) {
         return (
             <div className="min-h-screen pb-24 max-w-lg mx-auto bg-gray-50">
-                <header className="bg-white p-6 shadow-sm sticky top-0 z-10 flex justify-between items-center">
+                <header className="bg-white p-6 shadow-sm sticky top-0 z-10 flex justify-between items-center border-b border-gray-100">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+                        <h1 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 tracking-tight">
                             SplitSmart
                         </h1>
-                        <p className="text-gray-500 text-sm">Control de gastos pareja</p>
+                        <p className="text-gray-500 text-sm font-medium">Hola, {user?.name} 👋</p>
                     </div>
-                    <div className="flex gap-2">
-                        {installPrompt && (
-                            <button
-                                onClick={handleInstallApp}
-                                className="p-2 text-blue-600 hover:bg-blue-50 bg-white border border-blue-100 rounded-full animate-bounce shadow-sm"
-                                title="Instalar App"
-                            >
-                                <DownloadCloud size={20} />
-                            </button>
-                        )}
-                        <button
-                            onClick={() => setIsGoogleConfigOpen(true)}
-                            className="p-2 text-gray-400 hover:text-gray-700 bg-gray-100 rounded-full"
-                        >
-                            <Settings2 size={20} />
-                        </button>
-                    </div>
+                    <button
+                        onClick={handleLogout}
+                        className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-full transition-colors"
+                        title="Cerrar Sessión"
+                    >
+                        <LogOut size={20} />
+                    </button>
                 </header>
 
                 <div className="p-4">
-                    {months.length === 0 ? (
+                    {isSyncing && months.length === 0 ? (
+                        <div className="flex justify-center py-10">
+                            <Loader2 className="animate-spin text-blue-500" size={30} />
+                        </div>
+                    ) : months.length === 0 ? (
                         <div className="text-center py-20 text-gray-400">
-                            <div className="bg-white p-6 rounded-full inline-block mb-4 shadow-sm">
-                                <PieChart size={40} className="text-blue-200" />
+                            <div className="bg-blue-50 p-6 rounded-full inline-block mb-4 shadow-sm border border-blue-100">
+                                <PieChart size={40} className="text-blue-400" />
                             </div>
-                            <p>No tienes gastos cargados.</p>
-                            <p className="text-sm">Crea un mes para empezar.</p>
+                            <h3 className="text-lg font-bold text-gray-700 mb-1">Tu cuenta está en cero</h3>
+                            <p className="text-sm">Crea un mes para empezar a compartir gastos.</p>
                         </div>
                     ) : (
-                        months.map(month => {
-                            const mExpenses = expenses.filter(e => e.monthId === month.id);
-                            const bal = calculateBalance(mExpenses, month.splitRatio);
-                            return (
-                                <MonthCard
-                                    key={month.id}
-                                    month={month}
-                                    balance={bal}
-                                    onClick={() => setActiveMonthId(month.id)}
-                                />
-                            );
-                        })
+                        <div className="space-y-4">
+                            {months.map(month => {
+                                const mExpenses = expenses.filter(e => e.monthId === month.id);
+                                const bal = calculateBalance(mExpenses, month.splitRatio);
+                                return (
+                                    <MonthCard
+                                        key={month.id}
+                                        month={month}
+                                        balance={bal}
+                                        onClick={() => setActiveMonthId(month.id)}
+                                    />
+                                );
+                            })}
+                        </div>
                     )}
                 </div>
 
                 <button
                     onClick={() => setIsNewMonthModalOpen(true)}
-                    className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-transform active:scale-95 flex items-center gap-2 font-semibold z-20"
+                    className="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all active:scale-95 flex items-center gap-2 font-bold z-20 hover:-translate-y-1"
                 >
-                    <Plus size={24} /> Nuevo Mes
+                    <Plus size={24} /> <span className="pr-1">Nuevo Mes</span>
                 </button>
 
                 <SettingsModal
@@ -317,13 +247,6 @@ const App: React.FC = () => {
                     config={null}
                     onSave={handleCreateMonth}
                     isNew={true}
-                />
-
-                <GoogleConfigModal
-                    isOpen={isGoogleConfigOpen}
-                    onClose={() => setIsGoogleConfigOpen(false)}
-                    onImport={months.length > 0 ? handleImportTotals : undefined}
-                    availableMonths={months.map(m => m.name)}
                 />
             </div>
         );
@@ -343,46 +266,50 @@ const App: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-24 max-w-lg mx-auto relative">
             {/* Header */}
-            <header className="bg-blue-600 text-white p-4 sticky top-0 z-30 shadow-md">
-                <div className="flex justify-between items-center mb-4">
-                    <button onClick={() => setActiveMonthId(null)} className="p-1 hover:bg-blue-500 rounded-full">
-                        <ArrowLeft size={24} />
+            <header className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-5 sticky top-0 z-30 shadow-lg"
+                    style={{ borderBottomLeftRadius: '24px', borderBottomRightRadius: '24px' }}>
+                <div className="flex justify-between items-center mb-6">
+                    <button onClick={() => setActiveMonthId(null)} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-sm transition-colors">
+                        <ArrowLeft size={20} />
                     </button>
-                    <h2 className="text-lg font-bold truncate">{activeMonth?.name}</h2>
-                    <button onClick={() => setIsSettingsModalOpen(true)} className="p-1 hover:bg-blue-500 rounded-full">
-                        <MoreVertical size={24} />
+                    <h2 className="text-xl font-bold truncate px-4">{activeMonth?.name}</h2>
+                    <button onClick={() => setIsSettingsModalOpen(true)} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-sm transition-colors">
+                        <MoreVertical size={20} />
                     </button>
                 </div>
 
-                <div className="bg-white rounded-xl p-4 text-gray-800 shadow-lg flex flex-col gap-3">
-                    <div className="flex justify-between items-end border-b pb-3 border-gray-100">
+                <div className="bg-white rounded-2xl p-5 text-gray-800 shadow-xl border border-gray-100/50">
+                    <div className="flex justify-between items-end border-b pb-4 mb-4 border-gray-100">
                         <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Total Gastado</p>
-                            <p className="text-2xl font-bold">${activeBalance?.totalSpent.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Total Gastado</p>
+                            <p className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">
+                                ${activeBalance?.totalSpent.toFixed(2)}
+                            </p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-gray-500">División</p>
-                            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
-                                Yo: {activeMonth?.splitRatio}%
+                            <span className="bg-blue-50 border border-blue-100 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">
+                                División: {activeMonth?.splitRatio}%
                             </span>
                         </div>
                     </div>
 
                     <div className="flex justify-between items-center">
                         <div className="flex-1 border-r border-gray-100 pr-4">
-                            <p className="text-xs text-gray-500">Tú pagaste</p>
-                            <p className="font-semibold">${activeBalance?.paidByMe.toFixed(2)}</p>
-                            <p className="text-[10px] text-gray-400">Justo: ${activeBalance?.myFairShare.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 font-bold mb-1">Pagado por ti</p>
+                            <p className="text-lg font-bold">${activeBalance?.paidByMe.toFixed(2)}</p>
+                            <p className="text-[10px] text-gray-400 font-medium">Debería ser: ${activeBalance?.myFairShare.toFixed(2)}</p>
                         </div>
                         <div className="flex-1 pl-4 text-right">
                             {Math.abs(activeBalance?.balance || 0) < 0.1 ? (
-                                <p className="text-green-600 font-bold">Cuentas Claras</p>
+                                <div className="inline-block bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg border border-emerald-100 shadow-sm">
+                                    <p className="font-bold text-sm">Cuentas Claras ✨</p>
+                                </div>
                             ) : (
                                 <>
-                                    <p className="text-xs text-gray-500">
-                                        {(activeBalance?.balance || 0) > 0 ? "Te deben" : "Debes"}
+                                    <p className="text-xs text-gray-400 font-bold mb-1">
+                                        {(activeBalance?.balance || 0) > 0 ? "Te deben" : "Debes a pareja"}
                                     </p>
-                                    <p className={`text-xl font-bold ${(activeBalance?.balance || 0) > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                    <p className={`text-2xl font-black ${(activeBalance?.balance || 0) > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                                         ${Math.abs(activeBalance?.balance || 0).toFixed(2)}
                                     </p>
                                 </>
@@ -393,69 +320,42 @@ const App: React.FC = () => {
             </header>
 
             {/* Main Content */}
-            <div className="p-4 space-y-6">
-
-                {/* Actions Row */}
-                <div className="grid grid-cols-2 gap-3">
-                    <button
-                        onClick={handleGoogleSync}
-                        disabled={isSyncing}
-                        className="col-span-2 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 disabled:opacity-70 disabled:scale-100"
-                    >
-                        {isSyncing ? <Loader2 className="animate-spin" size={20} /> : <Sheet size={20} />}
-                        {isSyncing ? 'Sincronizando...' : 'Enviar a Excel (Drive)'}
-                    </button>
-                    {/* Status Message */}
-                    {syncStatus && (
-                        <div className={`col-span-2 p-3 rounded-lg text-sm text-center font-medium animate-in fade-in slide-in-from-top-2 ${syncStatus.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {syncStatus.msg}
-                        </div>
-                    )}
-
-                    <button
-                        onClick={handleExportCSV}
-                        className="bg-white border border-gray-200 text-gray-700 py-3 px-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 shadow-sm active:bg-gray-50"
-                    >
-                        <Download size={18} /> Backup CSV
-                    </button>
-                    <button
-                        onClick={handleAnalyze}
-                        className="bg-white border border-gray-200 text-purple-700 py-3 px-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 shadow-sm active:bg-gray-50"
-                    >
-                        <PieChart size={18} /> IA Insight
-                    </button>
-
-                    <button
-                        onClick={handlePullFromLog}
-                        disabled={isSyncing}
-                        className="col-span-2 bg-blue-50 border border-blue-200 text-blue-700 py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 disabled:opacity-70"
-                    >
-                        {isSyncing ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
-                        Recuperar Datos desde Excel
-                    </button>
-                </div>
+            <div className="p-4 space-y-6 -mt-2">
+                
+                {/* AI Button */}
+                <button
+                    onClick={handleAnalyze}
+                    className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white py-4 px-4 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-purple-500/30 transition-all active:scale-[0.98]"
+                >
+                    <PieChart size={20} /> Analizar Hábitos con Inteligencia Artificial
+                </button>
 
                 {/* AI Insight Box */}
                 {aiInsight && (
-                    <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 text-sm text-purple-900 animate-in fade-in">
-                        <div className="flex items-start gap-2">
-                            <Info className="shrink-0 mt-0.5" size={16} />
-                            <div className="whitespace-pre-line">{aiInsight}</div>
+                    <div className="bg-white p-5 rounded-2xl border border-purple-100 shadow-sm animate-in fade-in slide-in-from-top-4 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-500 to-fuchsia-500"></div>
+                        <div className="flex items-start gap-3">
+                            <div className="bg-purple-100 p-2 rounded-xl shrink-0 text-purple-600 mt-1">
+                                <Info size={20} />
+                            </div>
+                            <div className="whitespace-pre-line text-sm text-gray-700 font-medium leading-relaxed">{aiInsight}</div>
                         </div>
                     </div>
                 )}
 
                 {/* Chart */}
                 {activeExpenses.length > 0 && (
-                    <div className="h-48 w-full bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
-                        <ResponsiveContainer width="100%" height="100%">
+                    <div className="h-56 w-full bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Gasto por Categoría</h3>
+                        <ResponsiveContainer width="100%" height="80%">
                             <BarChart data={chartData}>
                                 <XAxis dataKey="name" hide />
                                 <YAxis hide />
                                 <RechartsTooltip
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
+                                    cursor={{fill: 'rgba(243, 244, 246, 0.4)'}}
                                 />
-                                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                                <Bar dataKey="value" radius={[6, 6, 6, 6]}>
                                     {chartData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#3b82f6' : '#8b5cf6'} />
                                     ))}
@@ -467,25 +367,31 @@ const App: React.FC = () => {
 
                 {/* Expense List */}
                 <div>
-                    <h3 className="text-sm font-bold text-gray-500 uppercase mb-3 ml-1">Historial</h3>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">Historial de Transacciones</h3>
                     <div className="space-y-3">
-                        {activeExpenses.length === 0 && <p className="text-center text-gray-400 py-4">No hay gastos aún.</p>}
+                        {activeExpenses.length === 0 && (
+                            <div className="bg-white p-6 rounded-2xl text-center border border-gray-100 border-dashed">
+                                <p className="text-gray-400 font-medium">No hay gastos aún en este mes.</p>
+                            </div>
+                        )}
                         {activeExpenses.map(expense => (
-                            <div key={expense.id} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
-                                <div className="flex gap-3 items-center">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${expense.payer === User.Me ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
+                            <div key={expense.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex justify-between items-center group">
+                                <div className="flex gap-4 items-center">
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-black shadow-inner ${expense.payer === User.Me ? 'bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600 border border-blue-200' : 'bg-gradient-to-br from-purple-100 to-purple-50 text-purple-600 border border-purple-200'}`}>
                                         {expense.payer === User.Me ? 'YO' : 'PAR'}
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-gray-800">{expense.title}</p>
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <span>{expense.category}</span>
-                                            <span>•</span>
+                                        <p className="font-bold text-gray-800 text-sm mb-0.5">{expense.title}</p>
+                                        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+                                            <span className="bg-gray-100 px-2 py-0.5 rounded-md text-gray-600">{expense.category}</span>
+                                            <span className="text-gray-300">•</span>
                                             <span>{expense.date}</span>
                                         </div>
                                     </div>
                                 </div>
-                                <span className="font-bold text-gray-900">${expense.amount.toFixed(2)}</span>
+                                <span className="font-black text-gray-900 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                                    ${expense.amount.toFixed(2)}
+                                </span>
                             </div>
                         ))}
                     </div>
@@ -495,7 +401,7 @@ const App: React.FC = () => {
             {/* Floating Add Button */}
             <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-xl shadow-blue-300 hover:bg-blue-700 transition-transform active:scale-95 z-20"
+                className="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-xl shadow-blue-500/40 hover:-translate-y-1 transition-all active:scale-95 z-20"
             >
                 <Plus size={28} />
             </button>
@@ -513,13 +419,6 @@ const App: React.FC = () => {
                 onClose={() => setIsSettingsModalOpen(false)}
                 config={activeMonth || null}
                 onSave={handleUpdateMonth}
-            />
-
-            <GoogleConfigModal
-                isOpen={isGoogleConfigOpen}
-                onClose={() => setIsGoogleConfigOpen(false)}
-                onImport={activeMonth ? () => handleImportTotals(activeMonth.name) : undefined}
-                availableMonths={activeMonth ? [activeMonth.name] : []}
             />
         </div>
     );
