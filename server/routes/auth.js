@@ -73,7 +73,7 @@ router.post('/login', (req, res) => {
 
     res.json({
       token,
-      user: { id: user.id, email: user.email, name: user.name, partnerName: user.partner_name }
+      user: { id: user.id, email: user.email, name: user.name }
     });
   } catch (error) {
     console.error('Error en login:', error);
@@ -86,11 +86,11 @@ router.post('/login', (req, res) => {
 // ============================================================
 router.get('/me', (req, res) => {
   try {
-    const user = dbGet('SELECT id, email, name, partner_name, created_at FROM users WHERE id = ?', [req.userId]);
+    const user = dbGet('SELECT id, email, name, created_at FROM users WHERE id = ?', [req.userId]);
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-    res.json({ user: { ...user, partnerName: user.partner_name } });
+    res.json({ user });
   } catch (error) {
     res.status(500).json({ error: 'Error interno del servidor' });
   }

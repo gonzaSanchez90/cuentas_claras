@@ -72,7 +72,7 @@ const AuthScreen: React.FC<Props> = ({ onAuth }) => {
             Cuentas Claras
           </h1>
           <p className="text-gray-400 text-sm">
-            Controla los gastos en pareja de forma inteligente
+            Controla tus gastos de forma eficiente
           </p>
         </div>
 
@@ -99,7 +99,7 @@ const AuthScreen: React.FC<Props> = ({ onAuth }) => {
                 boxShadow: '0 4px 15px rgba(59, 130, 246, 0.3)'
               } : {}}
             >
-              <LogIn size={16} /> Entrar
+              <LogIn size={16} /> Ingresar
             </button>
             <button
               type="button"
@@ -217,7 +217,7 @@ const AuthScreen: React.FC<Props> = ({ onAuth }) => {
                 <Loader2 className="animate-spin" size={20} />
               ) : (
                 <>
-                  {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+                  {isLogin ? 'Ingresar' : 'Crear Cuenta'}
                   <ArrowRight size={18} />
                 </>
               )}

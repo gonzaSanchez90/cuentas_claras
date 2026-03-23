@@ -6,9 +6,6 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = path.join(__dirname, 'cuentas_claras.db');
 
-// ============================================================
-// Variable global del módulo para la instancia de BD
-// ============================================================
 let db = null;
 
 export async function initDatabase() {
@@ -23,48 +20,73 @@ export async function initDatabase() {
 
   db.run('PRAGMA foreign_keys = ON');
 
+  // Tabla de Usuarios
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       name TEXT NOT NULL,
-      partner_name TEXT DEFAULT 'Pareja',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
+  // Tabla de Meses (Grupos/Salas)
   db.run(`
     CREATE TABLE IF NOT EXISTS months (
       id TEXT PRIMARY KEY,
-      user_id INTEGER NOT NULL,
+      creator_id INTEGER NOT NULL,
       name TEXT NOT NULL,
-      split_ratio INTEGER NOT NULL DEFAULT 50,
+      emoji TEXT DEFAULT '📅',
       is_closed INTEGER NOT NULL DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
 
+  // Migración manual: Añadir columna emoji si no existe
+  try {
+     db.run("ALTER TABLE months ADD COLUMN emoji TEXT DEFAULT '📅'");
+  } catch (e) {
+     // Si ya existe saltará aquí
+  }
+
+  // Nueva tabla: Participantes del mes
+  // Permite tener N participantes, con nombres libres y porcentajes libres.
+  db.run(`
+    CREATE TABLE IF NOT EXISTS participants (
+      id TEXT PRIMARY KEY,
+      month_id TEXT NOT NULL,
+      user_id INTEGER, 
+      name TEXT NOT NULL,
+      split_percentage REAL NOT NULL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (month_id) REFERENCES months(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    )
+  `);
+
+  // Tabla Gastos
   db.run(`
     CREATE TABLE IF NOT EXISTS expenses (
       id TEXT PRIMARY KEY,
       month_id TEXT NOT NULL,
-      user_id INTEGER NOT NULL,
+      created_by INTEGER NOT NULL,
+      payer_participant_id TEXT NOT NULL,
       title TEXT NOT NULL,
       amount REAL NOT NULL,
-      payer TEXT NOT NULL CHECK(payer IN ('Me', 'Partner')),
       date TEXT NOT NULL,
       category TEXT NOT NULL,
       note TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (month_id) REFERENCES months(id) ON DELETE CASCADE,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (payer_participant_id) REFERENCES participants(id) ON DELETE CASCADE
     )
   `);
 
   saveDatabase();
-  console.log('✅ Base de datos inicializada correctamente');
+  console.log('\u2705 Base de datos Multijugador inicializada correctamente');
   return db;
 }
 
@@ -75,11 +97,8 @@ export function saveDatabase() {
   fs.writeFileSync(dbPath, buffer);
 }
 
-// ============================================================
-// Helpers - ahora usan getDb() para asegurar que db está listo
-// ============================================================
 function getDb() {
-  if (!db) throw new Error('La base de datos no está inicializada');
+  if (!db) throw new Error('La base de datos no est\xE1 inicializada');
   return db;
 }
 
