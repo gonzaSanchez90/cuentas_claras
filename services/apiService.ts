@@ -10,7 +10,7 @@ async function apiFetch(endpoint: string, options: RequestInit = {}) {
 
   const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || 'Error en la petici\xF3n');
+  if (!response.ok) throw new Error(data.error || 'Error en la petición');
   return data;
 }
 
@@ -43,7 +43,6 @@ export async function fetchMonths() {
 }
 
 export async function createMonth(name: string, participants: any[], emoji?: string) {
-  // participants: [{ name: 'Gonza', splitPercentage: 50, isMe: true }, ...]
   return apiFetch('/api/months', {
     method: 'POST',
     body: JSON.stringify({ name, participants, emoji }),

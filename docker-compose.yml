@@ -4,7 +4,7 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - accounts_data:/app/server
+      - accounts_data:/app/server/data
     environment:
       - NODE_ENV=production
       - PORT=3001
