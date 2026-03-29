@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { dbRun, dbGet, dbAll } from '../database.js';
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 const router = Router();
 
@@ -99,11 +100,45 @@ router.post('/:id/invite-email', async (req, res) => {
     if (!sender) return res.status(401).json({ error: 'Usuario no encontrado' });
 
     const {
+      RESEND_API_KEY,
       SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
     } = process.env;
 
+    const from = SMTP_FROM || 'Cuentas Claras <onboarding@resend.dev>';
+    const subject = `¡${sender.name} te ha invitado a unirte a su grupo!`;
+    const text = `Hola, ${sender.name} te ha invitado a compartir gastos.\nHaz clic aquí para unirte: ${link}`;
+    const html = `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background-color: #0f172a; color: white; border-radius: 16px;">
+        <h2 style="margin-top: 0; color: #a5b4fc;">¡Te han invitado a Cuentas Claras!</h2>
+        <p style="font-size: 16px; color: #e2e8f0;">Tu amigo/a <strong>${sender.name}</strong> te ha invitado a compartir y gestionar gastos juntos.</p>
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${link}" style="display: inline-block; padding: 14px 28px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 16px;">Unirme al Grupo</a>
+        </div>
+        <p style="font-size: 12px; color: #64748b;">Si el botón no funciona, copia y pega este enlace en tu navegador:<br/><span style="color: #94a3b8;">${link}</span></p>
+      </div>
+    `;
+
+    if (RESEND_API_KEY) {
+      const resend = new Resend(RESEND_API_KEY);
+      const { data, error } = await resend.emails.send({
+        from,
+        to: [email],
+        subject,
+        text,
+        html,
+      });
+
+      if (error) {
+        console.error('[EMAIL] Error Resend:', error);
+        return res.status(500).json({ error: 'Error enviando el email con Resend.' });
+      }
+
+      console.log('[EMAIL] Invitación enviada con Resend a:', email, '| ID:', data?.id);
+      return res.json({ message: 'Invitación enviada correctamente' });
+    }
+
     if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-      console.warn('[EMAIL] Variables SMTP no configuradas, email no enviado.');
+      console.warn('[EMAIL] No hay RESEND_API_KEY ni variables SMTP configuradas.');
       return res.status(503).json({ error: 'El servicio de email no está configurado en el servidor.' });
     }
 
@@ -117,30 +152,19 @@ router.post('/:id/invite-email', async (req, res) => {
       },
     });
 
-    const from = SMTP_FROM || `"Cuentas Claras" <${SMTP_USER}>`;
-
     const info = await transporter.sendMail({
       from,
       to: email,
-      subject: `¡${sender.name} te ha invitado a unirte a su grupo!`,
-      text: `Hola, ${sender.name} te ha invitado a compartir gastos.\nHaz clic aquí para unirte: ${link}`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background-color: #0f172a; color: white; border-radius: 16px;">
-          <h2 style="margin-top: 0; color: #a5b4fc;">¡Te han invitado a Cuentas Claras!</h2>
-          <p style="font-size: 16px; color: #e2e8f0;">Tu amigo/a <strong>${sender.name}</strong> te ha invitado a compartir y gestionar gastos juntos.</p>
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${link}" style="display: inline-block; padding: 14px 28px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 16px;">Unirme al Grupo</a>
-          </div>
-          <p style="font-size: 12px; color: #64748b;">Si el botón no funciona, copia y pega este enlace en tu navegador:<br/><span style="color: #94a3b8;">${link}</span></p>
-        </div>
-      `,
+      subject,
+      text,
+      html,
     });
 
     console.log('[EMAIL] Invitación enviada a:', email, '| ID:', info.messageId);
     res.json({ message: 'Invitación enviada correctamente' });
   } catch (error) {
     console.error('[EMAIL] Error enviando email:', error.message);
-    res.status(500).json({ error: 'Error enviando el email. Verifica la configuración SMTP.' });
+    res.status(500).json({ error: 'Error enviando el email. Verifica la configuración de Resend o SMTP.' });
   }
 });
 

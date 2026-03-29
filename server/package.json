@@ -12,6 +12,7 @@
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.13",
+    "resend": "^4.6.0",
     "sql.js": "^1.11.0"
   }
 }
