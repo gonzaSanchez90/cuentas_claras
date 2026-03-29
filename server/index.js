@@ -50,7 +50,7 @@ app.get('*', (req, res) => {
 // ============================================================
 async function start() {
   await initDatabase();
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`
   ╔══════════════════════════════════════════╗
   ║   🚀 Cuentas Claras API v1.0            ║
