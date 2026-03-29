@@ -1,71 +1,5 @@
-@layer base {
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(99, 102, 241, 0.2);
-    border-radius: 10px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(99, 102, 241, 0.4);
-  }
 
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  @media (max-width: 640px) {
-    .no-scrollbar-on-mobile::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar-on-mobile {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-  }
-}
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  body {
-    @apply bg-[#0f172a] text-slate-200 overflow-x-hidden;
-    font-family: 'Inter', sans-serif;
-  }
-}
-
-.hide-scrollbar::-webkit-scrollbar { display: none; }
-.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-.custom-scrollbar::-webkit-scrollbar { width: 4px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(100,100,255,0.2); border-radius: 10px; }
-
-/* Custom Animations */
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slide-in-bottom { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-.animate-fade-in { animation: fade-in 0.3s ease-out; }
-.animate-slide-in { animation: slide-in-bottom 0.4s ease-out; }
-
-
+$content = @"
 @layer components {
     .auth-container {
         @apply min-h-screen flex items-center justify-center p-4 relative overflow-hidden;
@@ -161,7 +95,6 @@
     }
 }
 
-
 @layer components {
   /* Overlay y Contenedor Principal */
   .expense-modal-overlay {
@@ -213,12 +146,11 @@
     @apply expense-input-base px-4 py-2.5 text-xs font-bold appearance-none;
   }
 
-  /* BotÃ³n Principal */
+  /* Botón Principal */
   .expense-btn-primary {
     @apply w-full bg-indigo-600 hover:bg-indigo-500 focus:ring-4 focus:ring-indigo-500/30 text-white py-4 rounded-xl font-bold text-sm shadow-xl shadow-indigo-600/20 flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-all outline-none;
   }
 }
-
 
 @layer components {
     .settings-overlay {
@@ -282,3 +214,10 @@
         @apply absolute inset-0 bg-[#0f172a]/95 backdrop-blur-xl z-[60] flex items-center justify-center p-8 animate-in fade-in duration-200;
     }
 }
+"@
+
+$lines = Get-Content index.css
+$newLines = $lines[0..67]
+$newLines += $content
+$newLines | Out-File index.css -Encoding utf8
+

@@ -3,13 +3,14 @@ import { LogIn, UserPlus, Mail, Lock, User, Loader2, ArrowRight } from 'lucide-r
 
 interface Props {
   onAuth: (token: string, user: any) => void;
+  initialName?: string;
 }
 
-const AuthScreen: React.FC<Props> = ({ onAuth }) => {
-  const [isLogin, setIsLogin] = useState(true);
+const AuthScreen: React.FC<Props> = ({ onAuth, initialName }) => {
+  const [isLogin, setIsLogin] = useState(!initialName);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [name, setName] = useState(initialName || '');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -129,16 +130,18 @@ const AuthScreen: React.FC<Props> = ({ onAuth }) => {
                   <input
                     type="text"
                     value={name}
-                    onChange={e => setName(e.target.value)}
+                    onChange={e => !initialName && setName(e.target.value)}
                     placeholder="Ej: Gonzalo"
                     required={!isLogin}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl text-white placeholder-gray-500 text-sm outline-none transition-all duration-200"
+                    disabled={!!initialName}
+                    readOnly={!!initialName}
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl text-white placeholder-gray-500 text-sm outline-none transition-all duration-200 ${initialName ? 'opacity-70 cursor-not-allowed bg-slate-800' : ''}`}
                     style={{
-                      backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                      backgroundColor: initialName ? 'rgba(15, 23, 42, 0.9)' : 'rgba(15, 23, 42, 0.6)',
                       border: '1px solid rgba(148, 163, 184, 0.1)',
                     }}
-                    onFocus={e => e.target.style.borderColor = 'rgba(99, 102, 241, 0.5)'}
-                    onBlur={e => e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)'}
+                    onFocus={e => !initialName && (e.target.style.borderColor = 'rgba(99, 102, 241, 0.5)')}
+                    onBlur={e => !initialName && (e.target.style.borderColor = 'rgba(148, 163, 184, 0.1)')}
                   />
                 </div>
               </div>

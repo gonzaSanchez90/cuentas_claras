@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import authMiddleware from '../middleware/auth.js';
 import { dbRun, dbGet } from '../database.js';
 
 const router = Router();
@@ -32,13 +33,16 @@ router.post('/register', (req, res) => {
       [email, hashedPassword, name]
     );
 
-    const token = jwt.sign({ userId: result.lastInsertRowid, email }, JWT_SECRET, {
+    const userId = result.lastInsertRowid;
+    console.log('[AUTH] User registered:', { id: userId, email, name });
+
+    const token = jwt.sign({ userId, email }, JWT_SECRET, {
       expiresIn: '30d'
     });
 
     res.status(201).json({
       token,
-      user: { id: result.lastInsertRowid, email, name }
+      user: { id: userId, email, name }
     });
   } catch (error) {
     console.error('Error en registro:', error);
@@ -84,7 +88,7 @@ router.post('/login', (req, res) => {
 // ============================================================
 // GET /api/auth/me  →  Obtener usuario actual
 // ============================================================
-router.get('/me', (req, res) => {
+router.get('/me', authMiddleware, (req, res) => {
   try {
     const user = dbGet('SELECT id, email, name, created_at FROM users WHERE id = ?', [req.userId]);
     if (!user) {
@@ -92,6 +96,7 @@ router.get('/me', (req, res) => {
     }
     res.json({ user });
   } catch (error) {
+    console.error('Error en /me:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

@@ -7,6 +7,7 @@ import AddExpenseModal from './components/AddExpenseModal';
 import SettingsModal from './components/SettingsModal';
 import DeleteConfirmationModal from './components/DeleteConfirmationModal';
 import AuthScreen from './components/AuthScreen';
+import AdminPanel from './components/AdminPanel';
 import { useAppLogic } from './hooks/useAppLogic';
 
 const App: React.FC = () => {
@@ -16,9 +17,7 @@ const App: React.FC = () => {
     return <div className="min-h-screen flex items-center justify-center bg-[#0f172a]"><Loader2 className="animate-spin text-indigo-500" size={40} /></div>;
   }
 
-  if (!state.isAuthenticated) return <AuthScreen onAuth={handlers.handleAuth} />;
-
-  if (state.inviteToken && state.inviteData) {
+  if (state.inviteToken && state.inviteData && !state.pendingParticipantId) {
     return (
       <div className="min-h-screen pb-24 max-w-lg mx-auto bg-[#0f172a] flex items-center justify-center p-4">
         <div className="bg-[#1e293b] p-6 rounded-[24px] shadow-2xl border border-slate-700 w-full animate-in fade-in slide-in-from-bottom-4">
@@ -27,15 +26,21 @@ const App: React.FC = () => {
           <p className="text-sm text-slate-400 mb-4 text-center">¿Que perfil de participante eres?</p>
           <div className="space-y-3">
             {state.inviteData.availableSlots.map((slot: any) => (
-              <button key={slot.id} onClick={() => handlers.handleJoinGroup(slot.id)} className="w-full bg-[#0f172a] hover:bg-indigo-600 border border-slate-700 hover:border-indigo-500 text-slate-200 hover:text-white font-bold py-4 rounded-xl transition-all shrink-0 outline-none">
+              <button key={slot.id} onClick={() => handlers.handleJoinSlot(slot.id, slot.name)} className="w-full bg-[#0f172a] hover:bg-indigo-600 border border-slate-700 hover:border-indigo-500 text-slate-200 hover:text-white font-bold py-4 rounded-xl transition-all shrink-0 outline-none">
                 Soy {slot.name}
               </button>
             ))}
           </div>
-          <button onClick={() => { setters.setInviteToken(null); window.history.replaceState({}, '', '/'); }} className="mt-6 w-full text-center text-slate-500 font-medium hover:text-slate-300 outline-none">Cancelar</button>
+          <button onClick={() => { setters.setInviteToken(null); window.history.replaceState({}, '', '/'); }} className="mt-6 w-full text-center text-slate-500 font-medium hover:text-slate-300 outline-none">Rechazar invitación</button>
         </div>
       </div>
     );
+  }
+
+  if (!state.isAuthenticated) return <AuthScreen onAuth={handlers.handleAuth} initialName={state.pendingParticipantName || undefined} />;
+
+  if (window.location.pathname === '/admin') {
+    return <AdminPanel />;
   }
 
   return (
@@ -74,6 +79,7 @@ const App: React.FC = () => {
             onEditExpense={(e) => { setters.setEditingExpense(e); setters.setIsAddModalOpen(true); }}
             onDeleteExpense={handlers.handleDeleteExpense}
             onSetOpenMenu={setters.setOpenExpenseMenuId}
+            onSendEmailInvite={handlers.handleSendEmailInvite}
           />
         )
       )}

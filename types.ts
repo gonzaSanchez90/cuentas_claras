@@ -1,16 +1,16 @@
 export enum Category {
-  Rent = 'Alquiler',
-  Electricity = 'Luz',
   Water = 'Agua',
+  Rent = 'Alquiler',
+  Pharmacy = 'Farmacia',
+  HouseExpenses = 'Gastos del hogar',
   Internet = 'Internet',
+  Electricity = 'Luz',
+  SocialSecurity = 'Obra Social',
+  Outings = 'Salidas',
+  Supermarket = 'Supermercado',
+  Subscriptions = 'Suscripciones',
   Phone = 'Teléfono',
   Transport = 'Transporte',
-  SocialSecurity = 'Obra Social',
-  Supermarket = 'Supermercado',
-  HouseExpenses = 'Gastos del hogar',
-  Outings = 'Salidas',
-  Pharmacy = 'Farmacia',
-  Subscriptions = 'Suscripciones',
   Misc = 'Varios'
 }
 

@@ -10,6 +10,8 @@ import { initDatabase } from './database.js';
 import authRoutes from './routes/auth.js';
 import monthRoutes from './routes/months.js';
 import expenseRoutes from './routes/expenses.js';
+import adminRoutes from './routes/admin.js';
+import publicRoutes from './routes/public.js';
 import authMiddleware from './middleware/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -25,9 +27,11 @@ app.use(express.json());
 // ============================================================
 // Rutas de la API
 // ============================================================
+app.use('/api/public', publicRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/months', authMiddleware, monthRoutes);
 app.use('/api/expenses', authMiddleware, expenseRoutes);
+app.use('/api/admin', authMiddleware, adminRoutes);
 
 // ============================================================
 // Servir el frontend en producción

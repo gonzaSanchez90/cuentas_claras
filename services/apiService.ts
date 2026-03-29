@@ -61,7 +61,7 @@ export async function deleteMonth(id: string) {
 }
 
 export async function fetchMonthInvite(id: string) {
-  return apiFetch(`/api/months/${id}/invite`);
+  return apiFetch(`/api/public/months/${id}/invite`);
 }
 
 export async function joinMonth(id: string, participantId: string) {
@@ -115,3 +115,19 @@ export async function reassignExpenses(monthId: string, fromParticipantId: strin
     body: JSON.stringify({ fromParticipantId, toParticipantId }),
   });
 }
+
+export async function fetchAdminUsers() {
+  return apiFetch('/api/admin/users');
+}
+
+export async function deleteAdminUser(id: number) {
+  return apiFetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+}
+
+export async function sendEmailInvite(monthId: string, email: string, link: string) {
+  return apiFetch(`/api/months/${monthId}/invite-email`, {
+    method: 'POST',
+    body: JSON.stringify({ email, link })
+  });
+}
+

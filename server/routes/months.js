@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { dbRun, dbGet, dbAll } from '../database.js';
+import nodemailer from 'nodemailer';
 
 const router = Router();
 
@@ -81,6 +82,50 @@ router.post('/:id/join', (req, res) => {
     res.json({ message: 'Te has unido exitosamente al grupo' });
   } catch (error) {
     res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+// POST /api/months/:id/invite-email
+router.post('/:id/invite-email', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email, link } = req.body;
+    
+    const sender = dbGet('SELECT name FROM users WHERE id = ?', [req.userId]);
+    if (!sender) return res.status(401).json({ error: 'Usuario no encontrado' });
+
+    let testAccount = await nodemailer.createTestAccount();
+    
+    let transporter = nodemailer.createTransport({
+      host: "smtp.ethereal.email",
+      port: 587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+
+    let info = await transporter.sendMail({
+      from: '"Cuentas Claras" <no-reply@cuentasclaras.local>',
+      to: email,
+      subject: `¡${sender.name} te ha invitado a unirte a su grupo!`,
+      text: `Hola, tu amigo ${sender.name} te ha invitado a compartir gastos en este mes.\nHaz clic en el siguiente enlace para unirte: ${link}`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; text-align: center; background-color: #0f172a; color: white; border-radius: 12px;">
+          <h2>¡Te han invitado a Cuentas Claras!</h2>
+          <p style="font-size: 16px;">Hola, tu amigo/a <strong>${sender.name}</strong> te ha invitado a compartir gastos.</p>
+          <a href="${link}" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Unirme al Grupo</a>
+          <p style="margin-top: 30px; font-size: 12px; color: #94a3b8;">Si el botón no funciona, copia y pega este enlace en tu navegador:<br/>${link}</p>
+        </div>
+      `,
+    });
+
+    console.log("Message sent: %s", info.messageId);
+    res.json({ message: 'Invitación enviada', previewUrl: nodemailer.getTestMessageUrl(info) });
+  } catch (error) {
+    console.error('Email error:', error);
+    res.status(500).json({ error: 'Error enviando email' });
   }
 });
 

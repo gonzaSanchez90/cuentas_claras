@@ -38,8 +38,8 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
       setName('');
       setEmoji('📅');
       setParticipants([
-        { name: currentUser?.name || 'Mi Cuenta', pStr: '50', isMe: true },
-        { name: 'Participante 2', pStr: '50' }
+        { name: currentUser?.name || 'Mi Cuenta', pStr: '', isMe: true },
+        { name: '', pStr: '' }
       ]);
       setPendingReassignments([]);
       setShowEmojiPicker(false);
@@ -54,33 +54,19 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
   };
 
   const handleBlurAndBalance = (index: number) => {
-    let value = parseFloat(participants[index].pStr);
-    if (isNaN(value)) value = 0;
-    if (value > 100) value = 100;
-    if (value < 0) value = 0;
+    let raw = participants[index].pStr;
+    if (!raw) return;
+    let value = parseFloat(raw.replace(',', '.'));
+    if (isNaN(value)) {
+      value = 0;
+    } else {
+      if (value > 100) value = 100;
+      if (value < 0) value = 0;
+      value = Math.round(value);
+    }
 
     let newParticipants = [...participants];
-    const othersCount = newParticipants.length - 1;
-    if (othersCount > 0) {
-       const sumOthers = newParticipants.reduce((acc, p, i) => i !== index ? acc + (parseFloat(p.pStr) || 0) : acc, 0);
-       const targetForOthers = 100 - value;
-       for (let i = 0; i < newParticipants.length; i++) {
-         if (i !== index) {
-            let currentOtherVal = parseFloat(newParticipants[i].pStr) || 0;
-            let ratio = sumOthers > 0 ? (currentOtherVal / sumOthers) : (1 / othersCount);
-            let newVal = targetForOthers * ratio;
-            newParticipants[i].pStr = (Math.round(newVal * 10) / 10).toString();
-         }
-       }
-    }
-    const total = newParticipants.reduce((acc, p) => acc + (parseFloat(p.pStr) || 0), 0);
-    const diff = 100 - total;
-    if (Math.abs(diff) > 0.01 && othersCount > 0) {
-      const altIdx = index === 0 ? 1 : 0;
-      let adjusted = (parseFloat(newParticipants[altIdx].pStr) || 0) + diff;
-      newParticipants[altIdx].pStr = (Math.round(adjusted * 10) / 10).toString();
-    }
-    newParticipants[index].pStr = value.toString();
+    newParticipants[index].pStr = value === 0 && raw === '' ? '' : value.toString();
     setParticipants(newParticipants);
   };
 
@@ -108,8 +94,8 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
     setReassignToId('');
   };
 
-  const totalPercentage = participants.reduce((acc, p) => acc + (parseFloat(p.pStr) || 0), 0);
-  const isValid = Math.abs(totalPercentage - 100) < 0.2 && name.trim().length > 0 && participants.length > 0;
+  const totalPercentage = participants.reduce((acc, p) => acc + (parseFloat(p.pStr.replace(',', '.')) || 0), 0);
+  const isValid = Math.abs(totalPercentage - 100) < 0.2 && name.trim().length > 0 && participants.length > 0 && participants.every(p => p.name.trim() !== '');
 
   if (!isOpen) return null;
 
@@ -199,8 +185,8 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
           <div>
               <div className="flex items-center justify-between mb-4 pl-1">
                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Participantes</label>
-                 <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${Math.abs(totalPercentage - 100) < 0.2 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                    {totalPercentage.toFixed(0)}% de 100%
+                 <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${Math.abs(totalPercentage - 100) < 0.2 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-500/10 text-slate-400'}`}>
+                    {Math.round(totalPercentage)}%
                  </span>
               </div>
               <div className="space-y-3">
@@ -233,8 +219,27 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
                       </div>
                   ))}
               </div>
+              <div className="mt-4">
+                 {Math.abs(totalPercentage - 100) > 0.1 && (
+                     <div className={`p-3 rounded-xl border flex items-start gap-2.5 text-xs font-bold ${totalPercentage < 100 ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-rose-500/10 border-rose-500/20 text-rose-500'}`}>
+                         <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                         <span>
+                             {totalPercentage < 100 
+                                 ? `Falta un ${Math.round(100 - totalPercentage)}% para llegar al 100%. Modifica los porcentajes.`
+                                 : `Los porcentajes se exceden por ${Math.round(totalPercentage - 100)}%. Redúcelos para que sumen 100%.`}
+                         </span>
+                     </div>
+                 )}
+                 {Math.abs(totalPercentage - 100) <= 0.1 && (
+                     <div className="p-3 rounded-xl border bg-emerald-500/10 border-emerald-500/20 flex items-center gap-2.5 text-xs font-bold text-emerald-500">
+                         <CheckCircle2 size={16} className="shrink-0" />
+                         <span>Los porcentajes suman 100% correctamente.</span>
+                     </div>
+                 )}
+              </div>
+
               <button 
-                onClick={() => setParticipants([...participants, { name: '', pStr: '0' }])} 
+                onClick={() => setParticipants([...participants, { name: '', pStr: '' }])} 
                 className="w-full mt-5 py-4 border border-dashed border-slate-800 text-slate-500 rounded-2xl flex items-center justify-center gap-2 hover:bg-indigo-600/5 hover:border-indigo-500/30 hover:text-indigo-400 transition-all text-[10px] font-black uppercase tracking-widest outline-none"
               >
                   <Plus size={16} /> Añadir Participante

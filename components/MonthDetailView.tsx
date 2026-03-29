@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowLeft, Settings, Copy, CheckCircle2, Plus, Search, X, Filter, MoreVertical, Edit2, Trash2, PieChart, Award, Banknote, Hourglass, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, Settings, Copy, CheckCircle2, Plus, Search, X, Filter, MoreVertical, Edit2, Trash2, PieChart, Award, Banknote, Hourglass, AlertCircle, Mail, Send } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { MonthConfig, Expense, BalanceResult, Category } from '../types';
 import { formatCurrency, formatDateLong } from '../utils/format';
@@ -24,14 +24,28 @@ interface MonthDetailViewProps {
   onEditExpense: (e: Expense) => void;
   onDeleteExpense: (id: string) => void;
   onSetOpenMenu: (id: string | null) => void;
+  onSendEmailInvite: (email: string) => Promise<void>;
 }
 
 const MonthDetailView: React.FC<MonthDetailViewProps> = ({ 
   activeMonth, activeBalance, activeMonthExpenses, expensesByDay, chartData, 
   categoryFilter, searchQuery, copied, openExpenseMenuId,
   onBack, onSettings, onSettle, onCopyLink, onAddExpense, onSearch, 
-  onCategoryFilter, onEditExpense, onDeleteExpense, onSetOpenMenu 
+  onCategoryFilter, onEditExpense, onDeleteExpense, onSetOpenMenu, onSendEmailInvite
 }) => {
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [isSending, setIsSending] = useState(false);
+
+  const handleSendEmail = async () => {
+     if (!inviteEmail) return;
+     setIsSending(true);
+     await onSendEmailInvite(inviteEmail);
+     setIsSending(false);
+     setShowEmailModal(false);
+     setInviteEmail('');
+  };
+
   return (
     <div className="w-full md:w-[90%] lg:w-[85%] max-w-[1400px] mx-auto border-x border-white/5 md:shadow-2xl md:shadow-black/40 pb-24 min-h-screen">
       <header className="bg-[#0f172a] px-6 pt-10 pb-8 shadow-xl relative z-30 rounded-b-[40px] border-b border-white/5">
@@ -51,17 +65,29 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
         <div className="text-center mb-10">
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1.5">Total Gastado Grupal</p>
             <p className="text-5xl md:text-7xl font-black tracking-tighter text-white">€{formatCurrency(activeBalance?.totalSpent || 0)}</p>
-            <div className="flex flex-wrap justify-center gap-3 mt-6 px-4">
-                <button onClick={onCopyLink} className="inline-flex items-center gap-2 bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 px-5 py-2.5 rounded-xl text-xs font-black hover:bg-indigo-600 hover:text-white transition-all outline-none shadow-lg tracking-widest uppercase">
-                   {copied ? <CheckCircle2 size={16} className="text-emerald-400"/> : <Copy size={16} />} 
-                   {copied ? 'Link Copiado' : 'Invitar Amigos'}
-                </button>
+            <div className="flex flex-col items-center gap-6 mt-8 px-4">
+                {/* Grupo de Invitaciones */}
+                <div className="flex flex-col items-center bg-slate-900/30 p-4 border border-slate-800/80 rounded-[24px]">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-3 flex items-center gap-1.5"><Plus size={12} className="text-indigo-400"/> Invitar a un amigo</p>
+                    <div className="flex flex-wrap justify-center gap-3">
+                        <button onClick={onCopyLink} className="inline-flex items-center gap-2 bg-indigo-600 border border-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-black hover:bg-indigo-500 hover:-translate-y-0.5 transition-all outline-none shadow-lg shadow-indigo-500/20 tracking-widest uppercase">
+                           {copied ? <CheckCircle2 size={16} className="text-emerald-300"/> : <Copy size={16} />} 
+                           {copied ? 'Link Copiado' : 'Copiar Link'}
+                        </button>
+                        <button onClick={() => setShowEmailModal(true)} className="inline-flex items-center gap-2 bg-indigo-600 border border-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-black hover:bg-indigo-500 hover:-translate-y-0.5 transition-all outline-none shadow-lg shadow-indigo-500/20 tracking-widest uppercase">
+                           <Mail size={16} /> 
+                           Por Email
+                        </button>
+                    </div>
+                </div>
+
+                {/* Botón Principal Saldar Cuentas */}
                 <button 
                   onClick={onSettle} 
-                  className={`inline-flex items-center gap-2 border px-5 py-2.5 rounded-xl text-xs font-black transition-all outline-none shadow-lg tracking-widest uppercase ${activeMonth.isClosed ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                  className={`inline-flex items-center gap-2 border px-6 py-3 rounded-2xl text-xs md:text-sm font-black transition-all outline-none shadow-xl tracking-[0.15em] uppercase hover:-translate-y-0.5 ${activeMonth.isClosed ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-slate-800/80 border-slate-600 text-white hover:bg-slate-700 hover:border-slate-500'}`}
                 >
-                   <CheckCircle2 size={16} /> 
-                   {activeMonth.isClosed ? 'Cuentas Saldadas' : 'Saldar Cuentas'}
+                   <CheckCircle2 size={18} className={activeMonth.isClosed ? 'text-emerald-400' : 'text-slate-400'} /> 
+                   {activeMonth.isClosed ? 'Meso Saldado' : 'Saldar Cuentas'}
                 </button>
             </div>
         </div>
@@ -120,9 +146,9 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
 
                 <div className="overflow-hidden">
                     <div className="flex items-center gap-2 mb-4 pl-1"><Filter size={14} className="text-slate-500"/><h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Filtrar por Categoría</h3></div>
-                    <div className="flex flex-wrap gap-2.5">
+                    <div className="flex overflow-x-auto pb-4 gap-2.5 custom-scrollbar no-scrollbar-on-mobile">
                         <button onClick={() => onCategoryFilter(null)} className={`px-5 py-2.5 rounded-2xl text-[10px] font-black whitespace-nowrap border transition-all uppercase tracking-wider ${!categoryFilter ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/20 scale-105' : 'bg-slate-900/80 border-slate-700/50 text-slate-400 hover:border-indigo-500/30 hover:text-slate-200'}`}>Ver Todos</button>
-                        {Object.values(Category).filter(cat => activeMonthExpenses.some(e => e.category === cat)).map(cat => (
+                        {Object.values(Category).sort((a,b) => a.localeCompare(b)).filter(cat => activeMonthExpenses.some(e => e.category === cat)).map(cat => (
                             <button key={cat} onClick={() => onCategoryFilter(cat === categoryFilter ? null : cat)} className={`px-5 py-2.5 rounded-2xl text-[10px] font-black whitespace-nowrap border transition-all uppercase tracking-wider flex items-center gap-2 ${categoryFilter === cat ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/20 scale-105' : 'bg-slate-900/80 border-slate-700/50 text-slate-400 hover:border-indigo-500/30 hover:text-slate-200'}`}>{cat}</button>
                         ))}
                     </div>
@@ -168,10 +194,9 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                     <div className="flex items-center justify-between mb-8 px-2"><h3 className="text-[12px] font-black text-slate-400 uppercase tracking-[0.2em]">Distribución por Categoría</h3><PieChart size={18} className="text-indigo-500" /></div>
                     <div className="h-72 w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 20, right: 10, left: 10, bottom: 40 }}>
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'black'}} interval={0} />
+                        <BarChart data={chartData} margin={{ top: 20, right: 10, left: 10, bottom: 60 }}>
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'black'}} interval={0} angle={-45} textAnchor="end" height={60} />
                             <YAxis hide domain={[0, 'auto']} />
-                            <RechartsTooltip cursor={{fill: 'rgba(255,255,255,0.03)'}} contentStyle={{backgroundColor: '#1e293b', borderRadius: '24px', border: '1px solid #334155', boxShadow: '0 20px 40px rgba(0,0,0,0.4)'}} />
                             <Bar dataKey="value" radius={[12, 12, 12, 12]} barSize={40}>
                             {chartData.map((entry, index) => <Cell key={index} fill={index % 2 === 0 ? '#6366f1' : '#818cf8'} />)}
                             <LabelList dataKey="value" position="top" content={(props: any) => (<text x={props.x + props.width / 2} y={props.y - 15} fill="#fff" fontSize={12} fontWeight="900" textAnchor="middle">€{formatCurrency(props.value)}</text>)} />
@@ -189,8 +214,8 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                     <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6 text-center">Resumen de Gastos</h3>
                     <div className="h-56 w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 20, right: 10, left: 10, bottom: 30 }}>
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}} interval={0} />
+                        <BarChart data={chartData} margin={{ top: 20, right: 10, left: 10, bottom: 50 }}>
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}} interval={0} angle={-45} textAnchor="end" height={50} />
                             <YAxis hide domain={[0, 'auto']} />
                             <Bar dataKey="value" radius={[8, 8, 8, 8]} barSize={32}>
                             {chartData.map((entry, index) => <Cell key={index} fill={index % 2 === 0 ? '#6366f1' : '#818cf8'} />)}
@@ -204,6 +229,22 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
             </div>
         </div>
       </div>
+
+      {showEmailModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-md" onClick={() => setShowEmailModal(false)}></div>
+          <div className="bg-[#1e293b] border border-slate-700 w-full max-w-sm rounded-[24px] shadow-2xl relative animate-in zoom-in-95 p-6 md:p-8">
+            <div className="flex justify-between items-center mb-6">
+               <h3 className="text-lg font-black text-white flex items-center gap-2"><Mail size={20} className="text-indigo-400" /> ¡Invita a un amigo!</h3>
+               <button onClick={() => setShowEmailModal(false)} className="text-slate-500 hover:text-white"><X size={20} /></button>
+            </div>
+            <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="Correo electrónico de tu amigo..." className="w-full px-5 py-4 bg-slate-900 border border-slate-700 rounded-[16px] text-white outline-none mb-6 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all" />
+            <button onClick={handleSendEmail} disabled={isSending || !inviteEmail} className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white py-4 rounded-[16px] font-black tracking-wider uppercase text-sm flex items-center justify-center gap-2 transition-all">
+               {isSending ? 'Enviando...' : <><Send size={18} /> Enviar Invitación</>}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

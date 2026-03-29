@@ -25,6 +25,8 @@ export const useAppLogic = () => {
 
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [inviteData, setInviteData] = useState<any>(null);
+  const [pendingParticipantId, setPendingParticipantId] = useState<string | null>(null);
+  const [pendingParticipantName, setPendingParticipantName] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsSyncing(true);
@@ -64,7 +66,6 @@ export const useAppLogic = () => {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
     if (inviteToken) {
       api.fetchMonthInvite(inviteToken).then(data => {
         setInviteData(data);
@@ -72,12 +73,12 @@ export const useAppLogic = () => {
         alert('Enlace invalido o caducado');
         setInviteToken(null);
         window.history.replaceState({}, '', '/');
-        loadData();
+        if (isAuthenticated) loadData();
       });
     } else {
-      loadData();
+      if (isAuthenticated) loadData();
     }
-  }, [isAuthenticated, inviteToken]);
+  }, [inviteToken, isAuthenticated]);
 
   const activeMonth = useMemo(() => months.find(m => m.id === activeMonthId), [months, activeMonthId]);
   const activeMonthExpenses = useMemo(() => expenses.filter(e => e.monthId === activeMonthId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [expenses, activeMonthId]);
@@ -106,10 +107,27 @@ export const useAppLogic = () => {
     if (existing) existing.value += curr.amount;
     else acc.push({ name: curr.category, value: curr.amount });
     return acc;
-  }, [] as any[]), [activeMonthExpenses]);
+  }, [] as any[]).sort((a: any, b: any) => a.name.localeCompare(b.name)), [activeMonthExpenses]);
 
   const handlers = {
-    handleAuth: (token: string, userData: any) => { setUser(userData); setIsAuthenticated(true); },
+    handleAuth: async (token: string, userData: any) => { 
+      setUser(userData); 
+      setIsAuthenticated(true); 
+      if (pendingParticipantId && inviteToken) {
+        try {
+          await api.joinMonth(inviteToken, pendingParticipantId);
+          alert('¡Cuenta creada y unida al grupo exitosamente!');
+          setInviteToken(null); setInviteData(null); setPendingParticipantId(null); setPendingParticipantName(null);
+          window.history.replaceState({}, '', '/');
+          loadData();
+        } catch (error: any) {
+          alert(error.message || 'No se pudo unir al grupo automáticamente');
+          setInviteToken(null); setInviteData(null); setPendingParticipantId(null); setPendingParticipantName(null);
+          window.history.replaceState({}, '', '/');
+          loadData();
+        }
+      }
+    },
     handleLogout: () => { api.logout(); setIsAuthenticated(false); setUser(null); setMonths([]); setExpenses([]); setActiveMonthId(null); },
     handleDeleteMonth: (id: string) => setDeleteConfirm({ id, type: 'month' }),
     handleConfirmDeleteMonth: async (id: string) => {
@@ -164,21 +182,62 @@ export const useAppLogic = () => {
         setDeleteConfirm(null);
       } catch (error) { alert("No se pudo borrar"); setDeleteConfirm(null); }
     },
+    handleJoinSlot: (slotId: string, slotName: string) => {
+      if (!isAuthenticated) {
+        setPendingParticipantId(slotId);
+        setPendingParticipantName(slotName);
+      } else {
+        handlers.handleJoinGroup(slotId);
+      }
+    },
     handleJoinGroup: async (participantId: string) => {
       if (!inviteToken) return;
       try {
         await api.joinMonth(inviteToken, participantId);
         alert('Te has unido exitosamente!');
-        setInviteToken(null); setInviteData(null);
+        setInviteToken(null); setInviteData(null); setPendingParticipantId(null); setPendingParticipantName(null);
         window.history.replaceState({}, '', '/');
         loadData();
-      } catch (error: any) { alert(error.message || 'No se pudo unir'); }
+      } catch (error: any) { 
+        alert(error.message || 'No se pudo unir'); 
+        setInviteToken(null); setInviteData(null); setPendingParticipantId(null); setPendingParticipantName(null);
+        window.history.replaceState({}, '', '/');
+        if (isAuthenticated) loadData();
+      }
+    },
+    handleSendEmailInvite: async (email: string) => {
+      if (!activeMonthId) return;
+      try {
+        const link = `${window.location.origin}/?join=${activeMonthId}`;
+        const res = await api.sendEmailInvite(activeMonthId, email, link);
+        alert(`¡Invitación enviada! Modo dev: Mira la URL aquí: ${res.previewUrl}`);
+      } catch (error: any) {
+        alert(error.message || 'Error enviando email');
+      }
     },
     copyInviteLink: () => {
       if (!activeMonthId) return;
-      const url = `${window.location.origin}?join=${activeMonthId}`;
-      navigator.clipboard.writeText(url);
-      setCopied(true);
+      const url = `${window.location.origin}${window.location.pathname}?join=${activeMonthId}`;
+      
+      // Fallback robust copy
+      const textArea = document.createElement("textarea");
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+          document.execCommand('copy');
+          setCopied(true);
+      } catch (err) {
+          console.error('Fallback copy failed', err);
+      }
+      document.body.removeChild(textArea);
+
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+          setCopied(true);
+        }).catch(err => console.error('Clipboard API failed', err));
+      }
+
       setTimeout(() => setCopied(false), 2000);
     }
   };
@@ -188,13 +247,14 @@ export const useAppLogic = () => {
       isAuthenticated, user, isLoadingInitial, months, expenses, activeMonthId,
       isAddModalOpen, isSettingsModalOpen, isNewMonthModalOpen, deleteConfirm,
       editingExpense, isSyncing, copied, openExpenseMenuId, categoryFilter,
-      searchQuery, inviteToken, inviteData, activeMonth, activeMonthExpenses,
+      searchQuery, inviteToken, inviteData, pendingParticipantId, pendingParticipantName, activeMonth, activeMonthExpenses,
       expensesByDay, activeBalance, chartData
     },
     setters: {
       setIsAddModalOpen, setIsSettingsModalOpen, setIsNewMonthModalOpen,
       setDeleteConfirm, setEditingExpense, setOpenExpenseMenuId,
-      setCategoryFilter, setSearchQuery, setActiveMonthId, setInviteToken, setInviteData
+      setCategoryFilter, setSearchQuery, setActiveMonthId, setInviteToken, setInviteData,
+      setPendingParticipantId, setPendingParticipantName
     },
     handlers
   };

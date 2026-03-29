@@ -5,10 +5,24 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, 'data');
+const dbPath = path.join(dataDir, 'cuentas_claras.db');
+const legacyDbPath = path.join(__dirname, 'cuentas_claras.db');
+
+// Ensure data directory exists
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
-const dbPath = path.join(dataDir, 'cuentas_claras.db');
+
+// MIGRATION: If old DB exists and new one doesn't, MOVE it.
+if (fs.existsSync(legacyDbPath) && !fs.existsSync(dbPath)) {
+  console.log('📦 Migrando base de datos antigua detectada...');
+  try {
+    fs.copyFileSync(legacyDbPath, dbPath);
+    console.log('✅ Migración completada con éxito.');
+  } catch (err) {
+    console.error('❌ Error migrando base de datos:', err);
+  }
+}
 
 let db = null;
 
@@ -109,9 +123,11 @@ function getDb() {
 export function dbRun(sql, params = []) {
   const d = getDb();
   d.run(sql, params);
-  saveDatabase();
   const result = d.exec('SELECT last_insert_rowid() as id');
-  return { lastInsertRowid: result[0]?.values[0]?.[0] };
+  const lastInsertRowid = result[0]?.values[0]?.[0];
+  saveDatabase();
+  console.log(`[DB] Executed: ${sql.substring(0, 50)}... | Result ID: ${lastInsertRowid}`);
+  return { lastInsertRowid };
 }
 
 export function dbGet(sql, params = []) {
