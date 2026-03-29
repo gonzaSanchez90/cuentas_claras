@@ -90,42 +90,57 @@ router.post('/:id/invite-email', async (req, res) => {
   try {
     const { id } = req.params;
     const { email, link } = req.body;
-    
+
+    if (!email || !link) {
+      return res.status(400).json({ error: 'Email y link son obligatorios' });
+    }
+
     const sender = dbGet('SELECT name FROM users WHERE id = ?', [req.userId]);
     if (!sender) return res.status(401).json({ error: 'Usuario no encontrado' });
 
-    let testAccount = await nodemailer.createTestAccount();
-    
-    let transporter = nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
-      secure: false,
+    const {
+      SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+    } = process.env;
+
+    if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+      console.warn('[EMAIL] Variables SMTP no configuradas, email no enviado.');
+      return res.status(503).json({ error: 'El servicio de email no está configurado en el servidor.' });
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: parseInt(SMTP_PORT || '587'),
+      secure: parseInt(SMTP_PORT || '587') === 465,
       auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
+        user: SMTP_USER,
+        pass: SMTP_PASS,
       },
     });
 
-    let info = await transporter.sendMail({
-      from: '"Cuentas Claras" <no-reply@cuentasclaras.local>',
+    const from = SMTP_FROM || `"Cuentas Claras" <${SMTP_USER}>`;
+
+    const info = await transporter.sendMail({
+      from,
       to: email,
       subject: `¡${sender.name} te ha invitado a unirte a su grupo!`,
-      text: `Hola, tu amigo ${sender.name} te ha invitado a compartir gastos en este mes.\nHaz clic en el siguiente enlace para unirte: ${link}`,
+      text: `Hola, ${sender.name} te ha invitado a compartir gastos.\nHaz clic aquí para unirte: ${link}`,
       html: `
-        <div style="font-family: sans-serif; padding: 20px; text-align: center; background-color: #0f172a; color: white; border-radius: 12px;">
-          <h2>¡Te han invitado a Cuentas Claras!</h2>
-          <p style="font-size: 16px;">Hola, tu amigo/a <strong>${sender.name}</strong> te ha invitado a compartir gastos.</p>
-          <a href="${link}" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Unirme al Grupo</a>
-          <p style="margin-top: 30px; font-size: 12px; color: #94a3b8;">Si el botón no funciona, copia y pega este enlace en tu navegador:<br/>${link}</p>
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background-color: #0f172a; color: white; border-radius: 16px;">
+          <h2 style="margin-top: 0; color: #a5b4fc;">¡Te han invitado a Cuentas Claras!</h2>
+          <p style="font-size: 16px; color: #e2e8f0;">Tu amigo/a <strong>${sender.name}</strong> te ha invitado a compartir y gestionar gastos juntos.</p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${link}" style="display: inline-block; padding: 14px 28px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 16px;">Unirme al Grupo</a>
+          </div>
+          <p style="font-size: 12px; color: #64748b;">Si el botón no funciona, copia y pega este enlace en tu navegador:<br/><span style="color: #94a3b8;">${link}</span></p>
         </div>
       `,
     });
 
-    console.log("Message sent: %s", info.messageId);
-    res.json({ message: 'Invitación enviada', previewUrl: nodemailer.getTestMessageUrl(info) });
+    console.log('[EMAIL] Invitación enviada a:', email, '| ID:', info.messageId);
+    res.json({ message: 'Invitación enviada correctamente' });
   } catch (error) {
-    console.error('Email error:', error);
-    res.status(500).json({ error: 'Error enviando email' });
+    console.error('[EMAIL] Error enviando email:', error.message);
+    res.status(500).json({ error: 'Error enviando el email. Verifica la configuración SMTP.' });
   }
 });
 
