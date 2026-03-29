@@ -1,0 +1,15 @@
+stages:
+  - deploy
+
+deploy_caprover:
+  stage: deploy
+  image: node:20-alpine
+  before_script:
+    - npm install -g caprover
+  script:
+    # Crear el tarball excluyendo carpetas innecesarias
+    - tar -czf /tmp/deploy.tar.gz --exclude='.git' --exclude='node_modules' --exclude='server/node_modules' --exclude='dist' --exclude='.env' .
+    # Desplegar a CapRover
+    - caprover deploy --caproverUrl $CAPROVER_URL --appToken $APP_TOKEN --appName cuentas-claras-backend --tarFile /tmp/deploy.tar.gz
+  only:
+    - hackaton
