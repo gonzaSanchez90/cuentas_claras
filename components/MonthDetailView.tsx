@@ -69,7 +69,7 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
         </div>
 
         <div className="text-center mb-10">
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1.5">Total Gastado Grupal</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1.5">Gasto Total</p>
             <p className="text-5xl md:text-7xl font-black tracking-tighter text-white">€{formatCurrency(activeBalance?.totalSpent || 0)}</p>
             <div className="flex flex-col items-center gap-6 mt-8 px-4">
                 {/* Grupo de Invitaciones */}
@@ -93,7 +93,7 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                   className={`inline-flex items-center gap-2 border px-6 py-3 rounded-2xl text-xs md:text-sm font-black transition-all outline-none shadow-xl tracking-[0.15em] uppercase hover:-translate-y-0.5 ${activeMonth.isClosed ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-slate-800/80 border-slate-600 text-white hover:bg-slate-700 hover:border-slate-500'}`}
                 >
                    <CheckCircle2 size={18} className={activeMonth.isClosed ? 'text-emerald-400' : 'text-slate-400'} /> 
-                   {activeMonth.isClosed ? 'Meso Saldado' : 'Saldar Cuentas'}
+                   {activeMonth.isClosed ? 'Mes Saldado' : 'Saldar Cuentas'}
                 </button>
             </div>
         </div>
