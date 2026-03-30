@@ -28,6 +28,8 @@ export const useAppLogic = () => {
   const [pendingParticipantId, setPendingParticipantId] = useState<string | null>(null);
   const [pendingParticipantName, setPendingParticipantName] = useState<string | null>(null);
 
+  const buildInviteUrl = (monthId: string) => `${window.location.origin}/invite/${monthId}`;
+
   const loadData = async () => {
     setIsSyncing(true);
     try {
@@ -46,7 +48,8 @@ export const useAppLogic = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const joinId = params.get('join');
+    const pathMatch = window.location.pathname.match(/^\/invite\/([^/]+)$/);
+    const joinId = pathMatch?.[1] || params.get('join');
     if (joinId) setInviteToken(joinId);
 
     const checkAuth = async () => {
@@ -208,7 +211,7 @@ export const useAppLogic = () => {
     handleSendEmailInvite: async (email: string) => {
       if (!activeMonthId) return;
       try {
-        const link = `${window.location.origin}${window.location.pathname}?join=${activeMonthId}`;
+        const link = buildInviteUrl(activeMonthId);
         const result = await api.sendEmailInvite(activeMonthId, email, link);
         alert(result?.message || '¡Invitación enviada correctamente!');
       } catch (error: any) {
@@ -217,7 +220,7 @@ export const useAppLogic = () => {
     },
     copyInviteLink: () => {
       if (!activeMonthId) return;
-      const url = `${window.location.origin}${window.location.pathname}?join=${activeMonthId}`;
+      const url = buildInviteUrl(activeMonthId);
       
       // Fallback robust copy
       const textArea = document.createElement("textarea");
