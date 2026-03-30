@@ -28,7 +28,7 @@ export const useAppLogic = () => {
   const [pendingParticipantId, setPendingParticipantId] = useState<string | null>(null);
   const [pendingParticipantName, setPendingParticipantName] = useState<string | null>(null);
 
-  const buildInviteUrl = (monthId: string) => `${window.location.origin}/invite/${monthId}`;
+  const buildInviteUrl = (monthId: string) => `${window.location.origin}/#invite=${monthId}`;
 
   const loadData = async () => {
     setIsSyncing(true);
@@ -48,8 +48,9 @@ export const useAppLogic = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const hashMatch = window.location.hash.match(/^#invite=([^&]+)$/);
     const pathMatch = window.location.pathname.match(/^\/invite\/([^/]+)$/);
-    const joinId = pathMatch?.[1] || params.get('join');
+    const joinId = hashMatch?.[1] || pathMatch?.[1] || params.get('join');
     if (joinId) setInviteToken(joinId);
 
     const checkAuth = async () => {
