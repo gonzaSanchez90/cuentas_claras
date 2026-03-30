@@ -25,7 +25,6 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
   const [pendingReassignments, setPendingReassignments] = useState<{from: string, to: string}[]>([]);
 
   const EMOJI_LIST = ['📅', '🏠', '🍕', '🚗', '✈️', '🎁', '💡', '🛒', '🐾', '🍻', '💰', '🍔', '🛒', '🏔️', '🎉', '⚽'];
-
   useEffect(() => {
     if (isOpen && config) {
       setName(config.name);
@@ -34,8 +33,6 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
       setPendingReassignments([]);
       setShowEmojiPicker(false);
     } else if (isOpen && isNew) {
-      const now = new Date();
-      const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
       setName('');
       setEmoji('📅');
       setParticipants([

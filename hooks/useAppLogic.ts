@@ -32,6 +32,8 @@ export const useAppLogic = () => {
   const [pendingParticipantId, setPendingParticipantId] = useState<string | null>(null);
   const [pendingParticipantName, setPendingParticipantName] = useState<string | null>(null);
   const [notice, setNotice] = useState<AppNotice>(null);
+  const [currencySymbol, setCurrencySymbolInternal] = useState<string>(() => localStorage.getItem('cc_currency') ?? '€');
+  const setCurrencySymbol = (symbol: string) => { localStorage.setItem('cc_currency', symbol); setCurrencySymbolInternal(symbol); };
 
   const buildInviteUrl = (monthId: string) => `${window.location.origin}/index.html#invite=${monthId}`;
   const showNotice = (type: 'success' | 'error' | 'info', message: string) => setNotice({ type, message });
@@ -278,14 +280,14 @@ export const useAppLogic = () => {
       isAddModalOpen, isSettingsModalOpen, isNewMonthModalOpen, deleteConfirm,
       editingExpense, isSyncing, copied, openExpenseMenuId, categoryFilter,
       searchQuery, inviteToken, inviteData, pendingParticipantId, pendingParticipantName, activeMonth, activeMonthExpenses,
-      settingsMode, notice,
+      settingsMode, notice, currencySymbol,
       expensesByDay, activeBalance, chartData
     },
     setters: {
       setIsAddModalOpen, setIsSettingsModalOpen, setIsNewMonthModalOpen,
       setDeleteConfirm, setEditingExpense, setOpenExpenseMenuId,
       setCategoryFilter, setSearchQuery, setActiveMonthId, setInviteToken, setInviteData,
-      setSettingsMode, setNotice,
+      setSettingsMode, setNotice, setCurrencySymbol,
       setPendingParticipantId, setPendingParticipantName
     },
     handlers

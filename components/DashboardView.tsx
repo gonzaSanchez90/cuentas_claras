@@ -16,10 +16,15 @@ interface DashboardViewProps {
   onManageParticipants: (id: string) => void;
   onDeleteMonth: (id: string) => void;
   onNewMonth: () => void;
+  currencySymbol: string;
+  onSetCurrency: (s: string) => void;
 }
 
+const CURRENCIES = ['€', '$', 'AR$'];
+
 const DashboardView: React.FC<DashboardViewProps> = ({ 
-  user, months, expenses, isSyncing, onLogout, onSelectMonth, onEditMonth, onManageParticipants, onDeleteMonth, onNewMonth 
+  user, months, expenses, isSyncing, onLogout, onSelectMonth, onEditMonth, onManageParticipants, onDeleteMonth, onNewMonth,
+  currencySymbol, onSetCurrency
 }) => {
   return (
     <div className="w-full md:w-[90%] lg:w-[85%] max-w-[1400px] mx-auto relative pb-24 h-full">
@@ -35,9 +40,26 @@ const DashboardView: React.FC<DashboardViewProps> = ({
            </h1>
            <p className="text-slate-400 text-base font-semibold mt-2 pl-1">Gusto en verte de nuevo, <span className="text-indigo-400">{user?.name}</span></p>
          </div>
-         <button onClick={onLogout} className="p-4 bg-slate-800/80 backdrop-blur-md border border-white/5 shadow-2xl text-slate-400 hover:text-rose-400 rounded-[20px] transition-all hover:scale-110 active:scale-95">
-            <LogOut size={24} />
-         </button>
+         <div className="flex items-center gap-3">
+           <div className="flex items-center gap-1 bg-slate-800/80 border border-white/5 rounded-2xl p-1 shadow-inner">
+             {CURRENCIES.map(sym => (
+               <button
+                 key={sym}
+                 onClick={() => onSetCurrency(sym)}
+                 className={`px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                   currencySymbol === sym
+                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                     : 'text-slate-400 hover:text-white hover:bg-white/5'
+                 }`}
+               >
+                 {sym}
+               </button>
+             ))}
+           </div>
+           <button onClick={onLogout} className="p-4 bg-slate-800/80 backdrop-blur-md border border-white/5 shadow-2xl text-slate-400 hover:text-rose-400 rounded-[20px] transition-all hover:scale-110 active:scale-95">
+             <LogOut size={24} />
+           </button>
+         </div>
        </header>
 
        <div className="px-10 py-6 relative z-10">
@@ -58,6 +80,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                      month={month} 
                      balance={bal} 
                      myBalance={myBal} 
+                     currencySymbol={currencySymbol}
                      onClick={() => onSelectMonth(month.id)} 
                      onEdit={(e) => { e.stopPropagation(); onEditMonth(month.id); }}
                      onManageParticipants={(e) => { e.stopPropagation(); onManageParticipants(month.id); }}
@@ -88,7 +111,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="bg-[#1e293b]/50 border border-white/5 p-8 rounded-[32px] backdrop-blur-md flex items-center justify-between">
                <div>
                    <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest mb-1">Total Anual Gastado</h3>
-                   <p className="text-4xl font-black text-white leading-none">€{formatCurrency(expenses.reduce((a,b) => a+b.amount,0))}</p>
+                     <p className="text-4xl font-black text-white leading-none">{formatCurrency(expenses.reduce((a,b) => a+b.amount,0), currencySymbol)}</p>
                </div>
                <div className="w-14 h-14 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center"><Wallet size={28}/></div>
             </div>

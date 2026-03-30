@@ -1,32 +1,25 @@
 import React, { useState } from 'react';
 import { MonthConfig, BalanceResult, ParticipantBalance } from '../types';
 import { ChevronRight, Users, CheckCircle2, MoreVertical, Edit2, Trash2, Calendar, CreditCard, UserPlus } from 'lucide-react';
+import { formatCurrency } from '../utils/format';
 
 interface Props {
   month: MonthConfig;
   balance: BalanceResult;
   myBalance?: ParticipantBalance;
+  currencySymbol: string;
   onClick: () => void;
   onEdit: (e: React.MouseEvent) => void;
   onManageParticipants: (e: React.MouseEvent) => void;
   onDelete: (e: React.MouseEvent) => void;
 }
 
-const formatCurrency = (amount: number) => {
-  const rounded = Math.abs(amount) < 0.001 ? 0 : amount;
-  const isInteger = Math.abs(rounded - Math.round(rounded)) < 0.001;
-  return rounded.toLocaleString('es-ES', { 
-    minimumFractionDigits: isInteger ? 0 : 2, 
-    maximumFractionDigits: 2 
-  });
-};
-
-const MonthCard: React.FC<Props> = ({ month, balance, myBalance, onClick, onEdit, onManageParticipants, onDelete }) => {
+const MonthCard: React.FC<Props> = ({ month, balance, myBalance, currencySymbol, onClick, onEdit, onManageParticipants, onDelete }) => {
   const [showMenu, setShowMenu] = useState(false);
   
   const isPositive = myBalance && myBalance.balance > 0;
   const isZero = myBalance ? Math.abs(myBalance.balance) < 0.1 : true;
-  const displayValue = myBalance ? formatCurrency(Math.abs(myBalance.balance)) : '0';
+  const displayValue = myBalance ? formatCurrency(Math.abs(myBalance.balance), currencySymbol) : '0';
 
   return (
     <div className="relative group/card h-full">
@@ -86,7 +79,7 @@ const MonthCard: React.FC<Props> = ({ month, balance, myBalance, onClick, onEdit
             <div className="flex items-center gap-2 text-slate-500">
                 <CreditCard size={14} />
                 <p className="text-xs font-bold uppercase tracking-widest mt-0.5">
-                   Total: €{formatCurrency(balance.totalSpent)}
+                   Total: {formatCurrency(balance.totalSpent, currencySymbol)}
                 </p>
             </div>
         </div>
@@ -110,7 +103,7 @@ const MonthCard: React.FC<Props> = ({ month, balance, myBalance, onClick, onEdit
                              {isPositive ? 'A favor' : 'En contra'}
                          </p>
                          <p className={`text-2xl font-black tracking-tighter ${isPositive ? 'text-emerald-400' : 'text-amber-400'}`}>
-                             €{displayValue}
+                             {displayValue}
                          </p>
                      </div>
                  )

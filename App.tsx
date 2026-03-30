@@ -57,6 +57,8 @@ const App: React.FC = () => {
           onManageParticipants={(id) => { setters.setActiveMonthId(id); setters.setSettingsMode('participants'); setters.setIsSettingsModalOpen(true); }}
           onDeleteMonth={handlers.handleDeleteMonth}
           onNewMonth={() => setters.setIsNewMonthModalOpen(true)}
+          currencySymbol={state.currencySymbol}
+          onSetCurrency={setters.setCurrencySymbol}
         />
       ) : (
         state.activeMonth && (
@@ -70,6 +72,8 @@ const App: React.FC = () => {
             searchQuery={state.searchQuery}
             copied={state.copied}
             openExpenseMenuId={state.openExpenseMenuId}
+            currencySymbol={state.currencySymbol}
+            onSetCurrency={setters.setCurrencySymbol}
             onBack={() => { setters.setActiveMonthId(null); setters.setSearchQuery(''); }}
             onEditDetails={() => { setters.setSettingsMode('details'); setters.setIsSettingsModalOpen(true); }}
             onManageParticipants={() => { setters.setSettingsMode('participants'); setters.setIsSettingsModalOpen(true); }}

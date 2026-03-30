@@ -254,14 +254,34 @@ router.put('/:id', (req, res) => {
     const { name, emoji, isClosed, participants } = req.body; // array de participants [{id, name, splitPercentage, user_id}]
     const { id } = req.params;
 
-    // Solo creador puede editar
-    const month = dbGet('SELECT * FROM months WHERE id = ? AND creator_id = ?', [id, req.userId]);
-    if (!month) return res.status(404).json({ error: 'Mes no encontrado o sin permisos' });
+    const month = dbGet('SELECT * FROM months WHERE id = ?', [id]);
+    if (!month) return res.status(404).json({ error: 'Mes no encontrado' });
 
-    dbRun(
-      'UPDATE months SET name = COALESCE(?, name), emoji = COALESCE(?, emoji), is_closed = COALESCE(?, is_closed) WHERE id = ?',
-      [name || null, emoji || null, isClosed !== undefined ? (isClosed ? 1 : 0) : null, id]
-    );
+    const isCreator = month.creator_id === req.userId;
+    const isParticipant = !!dbGet('SELECT id FROM participants WHERE month_id = ? AND user_id = ?', [id, req.userId]);
+
+    if (!isCreator && !isParticipant) {
+      return res.status(404).json({ error: 'Mes no encontrado o sin permisos' });
+    }
+
+    const currentClosed = !!month.is_closed;
+    const requestedClosed = isClosed !== undefined ? !!isClosed : currentClosed;
+    const requestedName = name ?? month.name;
+    const requestedEmoji = emoji ?? month.emoji;
+
+    if (!isCreator) {
+      const touchedDetails = requestedName !== month.name || requestedEmoji !== month.emoji || requestedClosed !== currentClosed;
+      if (touchedDetails) {
+        return res.status(403).json({ error: 'Solo el creador puede editar los detalles del cálculo' });
+      }
+    }
+
+    if (isCreator) {
+      dbRun(
+        'UPDATE months SET name = COALESCE(?, name), emoji = COALESCE(?, emoji), is_closed = COALESCE(?, is_closed) WHERE id = ?',
+        [name || null, emoji || null, isClosed !== undefined ? (isClosed ? 1 : 0) : null, id]
+      );
+    }
 
     // Actualizar o insertar participantes
     if (Array.isArray(participants)) {

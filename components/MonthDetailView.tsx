@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { ArrowLeft, Copy, CheckCircle2, Plus, Search, X, Filter, MoreVertical, Edit2, Trash2, PieChart, Award, Banknote, Hourglass, AlertCircle, Mail, Send, UserPlus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { MonthConfig, Expense, BalanceResult, Category } from '../types';
@@ -14,6 +14,8 @@ interface MonthDetailViewProps {
   searchQuery: string;
   copied: boolean;
   openExpenseMenuId: string | null;
+  currencySymbol: string;
+  onSetCurrency: (s: string) => void;
   onBack: () => void;
     onEditDetails: () => void;
     onManageParticipants: () => void;
@@ -28,9 +30,11 @@ interface MonthDetailViewProps {
   onSendEmailInvite: (email: string) => Promise<void>;
 }
 
+const CURRENCIES = ['€', '$', 'AR$'];
+
 const MonthDetailView: React.FC<MonthDetailViewProps> = ({ 
   activeMonth, activeBalance, activeMonthExpenses, expensesByDay, chartData, 
-  categoryFilter, searchQuery, copied, openExpenseMenuId,
+  categoryFilter, searchQuery, copied, openExpenseMenuId, currencySymbol, onSetCurrency,
     onBack, onEditDetails, onManageParticipants, onSettle, onCopyLink, onAddExpense, onSearch, 
   onCategoryFilter, onEditExpense, onDeleteExpense, onSetOpenMenu, onSendEmailInvite
 }) => {
@@ -47,6 +51,16 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
      setInviteEmail('');
   };
 
+    const renderChartLabel = (props: any) => {
+        const x = Number(props.x) + Number(props.width) / 2;
+        const y = Math.max(Number(props.y) - 10, 18);
+        return (
+            <text x={x} y={y} fill="#fff" fontSize={12} fontWeight="900" textAnchor="middle">
+                {formatCurrency(Number(props.value || 0), currencySymbol)}
+            </text>
+        );
+    };
+
   return (
     <div className="w-full md:w-[90%] lg:w-[85%] max-w-[1400px] mx-auto border-x border-white/5 md:shadow-2xl md:shadow-black/40 pb-24 min-h-screen">
       <header className="bg-[#0f172a] px-6 pt-10 pb-8 shadow-xl relative z-30 rounded-b-[40px] border-b border-white/5">
@@ -58,7 +72,15 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
              <h2 className="text-lg md:text-2xl font-black text-white truncate leading-tight uppercase tracking-tight">{activeMonth.emoji} {activeMonth.name}</h2>
              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{activeMonth.participants.length} Participantes</p>
           </div>
-                    <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 bg-slate-800 border border-white/5 rounded-2xl p-1">
+                          {CURRENCIES.map(sym => (
+                            <button key={sym} onClick={() => onSetCurrency(sym)}
+                              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition-all ${
+                                currencySymbol === sym ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                              }`}>{sym}</button>
+                          ))}
+                        </div>
                         <button onClick={onEditDetails} className="p-3 border border-slate-700 rounded-2xl bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300 outline-none shadow-sm">
                             <Edit2 size={18} />
                         </button>
@@ -70,7 +92,7 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
 
         <div className="text-center mb-10">
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1.5">Gasto Total</p>
-            <p className="text-5xl md:text-7xl font-black tracking-tighter text-white">€{formatCurrency(activeBalance?.totalSpent || 0)}</p>
+            <p className="text-5xl md:text-7xl font-black tracking-tighter text-white">{formatCurrency(activeBalance?.totalSpent || 0, currencySymbol)}</p>
             <div className="flex flex-col items-center gap-6 mt-8 px-4">
                 {/* Grupo de Invitaciones */}
                 <div className="flex flex-col items-center bg-slate-900/30 p-4 border border-slate-800/80 rounded-[24px]">
@@ -98,9 +120,9 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
             </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="flex flex-wrap justify-center gap-5">
              {activeBalance?.balances.map((b) => (
-                <div key={b.participantId} className={`p-6 rounded-[28px] border bg-slate-900 border-slate-800 flex flex-col justify-between shadow-xl transition-all hover:scale-[1.02] cursor-default relative overflow-hidden group`}>
+                <div key={b.participantId} className={`w-full sm:w-[calc(50%-10px)] lg:w-80 p-6 rounded-[28px] border bg-slate-900 border-slate-800 flex flex-col justify-between shadow-xl transition-all hover:scale-[1.02] cursor-default relative overflow-hidden group`}>
                    <div className="absolute -right-4 -bottom-4 text-white/5 rotate-12 transition-transform group-hover:rotate-0 duration-700 pointer-events-none">
                       {Math.abs(b.balance) < 0.1 ? <Award size={100} /> : b.balance > 0 ? <Banknote size={100} /> : <Hourglass size={100} />}
                    </div>
@@ -110,22 +132,22 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                    </div>
                    <div className="relative z-10">
                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Lleva Gastado</p>
-                      <p className="text-3xl font-black text-white shrink-0">€{formatCurrency(b.totalPaid)}</p>
+                             <p className="text-3xl font-black text-white shrink-0">{formatCurrency(b.totalPaid, currencySymbol)}</p>
                    </div>
                    <div className="mt-5 pt-5 border-t border-white/5 relative z-10">
-                      <p className="text-[11px] text-slate-400 font-bold tracking-tight">Le corresponde aportar: €{formatCurrency(b.fairShare)}</p>
+                             <p className="text-[11px] text-slate-400 font-bold tracking-tight">Le corresponde aportar: {formatCurrency(b.fairShare, currencySymbol)}</p>
                       {Math.abs(b.balance) < 0.1 ? (
                           <p className="text-xs font-black text-emerald-500 mt-2 uppercase tracking-[0.15em] flex items-center gap-1.5"><CheckCircle2 size={12} /> Cuentas Claras</p>
                       ) : (
                           <div className="mt-2 space-y-1">
                              <p className={`text-sm font-black uppercase tracking-wide px-3 py-1.5 rounded-xl inline-block ${activeMonth.isClosed ? 'bg-emerald-500/10 text-emerald-400' : (b.balance > 0 ? 'bg-amber-500/10 text-amber-400' : 'bg-rose-500/10 text-rose-400')}`}>
-                                 {activeMonth.isClosed ? (b.balance > 0 ? 'Deuda Cobrada' : 'Deuda Pagada') : (b.balance > 0 ? `Le deben €${formatCurrency(Math.abs(b.balance))}` : `Debe €${formatCurrency(Math.abs(b.balance))}`)}
+                                 {activeMonth.isClosed ? (b.balance > 0 ? 'Deuda Cobrada' : 'Deuda Pagada') : (b.balance > 0 ? `Le deben ${formatCurrency(Math.abs(b.balance), currencySymbol)}` : `Debe ${formatCurrency(Math.abs(b.balance), currencySymbol)}`)}
                              </p>
                              {b.balance < 0 && (b as any).owesTo?.length > 0 && (
                                  <div className="pl-1 pt-1 space-y-0.5">
                                     {(b as any).owesTo.map((debt: any, idx: number) => (
                                         <p key={idx} className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 ${activeMonth.isClosed ? 'text-emerald-500 opacity-60' : 'text-slate-500'}`}>
-                                            {activeMonth.isClosed ? <CheckCircle2 size={10} /> : '💰'} {activeMonth.isClosed ? 'Saldado con ' : 'debe a '} <span className={activeMonth.isClosed ? '' : 'text-slate-300'}>{debt.name}</span> {(b as any).owesTo.length > 1 && <span className={activeMonth.isClosed ? 'ml-1' : 'text-indigo-400/60 ml-1'}>€{formatCurrency(debt.amount)}</span>}
+                                            {activeMonth.isClosed ? <CheckCircle2 size={10} /> : '💰'} {activeMonth.isClosed ? 'Saldado con ' : 'debe a '} <span className={activeMonth.isClosed ? '' : 'text-slate-300'}>{debt.name}</span> {(b as any).owesTo.length > 1 && <span className={activeMonth.isClosed ? 'ml-1' : 'text-indigo-400/60 ml-1'}>{formatCurrency(debt.amount, currencySymbol)}</span>}
                                         </p>
                                     ))}
                                  </div>
@@ -175,7 +197,7 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                                                 <div className="truncate pr-4"><p className="font-bold text-slate-100 text-sm md:text-lg mb-0.5 truncate">{expense.title}</p><p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{expense.category}</p></div>
                                             </div>
                                             <div className="flex items-center gap-3 md:gap-5">
-                                                <div className="text-right shrink-0"><p className="font-black text-slate-100 text-base md:text-2xl tracking-tighter">€{formatCurrency(expense.amount)}</p><p className="text-[10px] text-indigo-400 font-black uppercase mt-0.5 tracking-[0.1em]">{expense.payerName}</p></div>
+                                                <div className="text-right shrink-0"><p className="font-black text-slate-100 text-base md:text-2xl tracking-tighter">{formatCurrency(expense.amount, currencySymbol)}</p><p className="text-[10px] text-indigo-400 font-black uppercase mt-0.5 tracking-[0.1em]">{expense.payerName}</p></div>
                                                 <button onClick={(e) => { e.stopPropagation(); onSetOpenMenu(openExpenseMenuId === expense.id ? null : expense.id); }} className="p-3 text-slate-600 hover:text-indigo-400 hover:bg-indigo-500/5 rounded-xl transition-all"><MoreVertical size={22} /></button>
                                             </div>
                                             {openExpenseMenuId === expense.id && (
@@ -198,14 +220,14 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                 {chartData.length > 0 && (
                 <div className="bg-[#1e293b]/60 p-8 rounded-[40px] border border-white/5 shadow-2xl backdrop-blur-md">
                     <div className="flex items-center justify-between mb-8 px-2"><h3 className="text-[12px] font-black text-slate-400 uppercase tracking-[0.2em]">Distribución por Categoría</h3><PieChart size={18} className="text-indigo-500" /></div>
-                    <div className="h-72 w-full">
+                    <div className="h-72 w-full overflow-visible">
                         <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 20, right: 10, left: 10, bottom: 60 }}>
+                        <BarChart data={chartData} margin={{ top: 36, right: 24, left: 24, bottom: 72 }}>
                             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'black'}} interval={0} angle={-45} textAnchor="end" height={60} />
                             <YAxis hide domain={[0, 'auto']} />
                             <Bar dataKey="value" radius={[12, 12, 12, 12]} barSize={40}>
                             {chartData.map((entry, index) => <Cell key={index} fill={index % 2 === 0 ? '#6366f1' : '#818cf8'} />)}
-                            <LabelList dataKey="value" position="top" content={(props: any) => (<text x={props.x + props.width / 2} y={props.y - 15} fill="#fff" fontSize={12} fontWeight="900" textAnchor="middle">€{formatCurrency(props.value)}</text>)} />
+                            <LabelList dataKey="value" position="top" content={renderChartLabel} />
                             </Bar>
                         </BarChart>
                         </ResponsiveContainer>
@@ -218,14 +240,14 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                 {chartData.length > 0 && (
                 <div className="bg-[#1e293b]/40 p-6 rounded-[32px] border border-slate-800 shadow-xl">
                     <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6 text-center">Resumen de Gastos</h3>
-                    <div className="h-56 w-full">
+                    <div className="h-56 w-full overflow-visible">
                         <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 20, right: 10, left: 10, bottom: 50 }}>
+                        <BarChart data={chartData} margin={{ top: 32, right: 20, left: 20, bottom: 60 }}>
                             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}} interval={0} angle={-45} textAnchor="end" height={50} />
                             <YAxis hide domain={[0, 'auto']} />
                             <Bar dataKey="value" radius={[8, 8, 8, 8]} barSize={32}>
                             {chartData.map((entry, index) => <Cell key={index} fill={index % 2 === 0 ? '#6366f1' : '#818cf8'} />)}
-                            <LabelList dataKey="value" position="top" content={(props: any) => (<text x={props.x + props.width / 2} y={props.y - 12} fill="#fff" fontSize={11} fontWeight="black" textAnchor="middle">€{formatCurrency(props.value)}</text>)} />
+                            <LabelList dataKey="value" position="top" content={renderChartLabel} />
                             </Bar>
                         </BarChart>
                         </ResponsiveContainer>
