@@ -208,9 +208,9 @@ export const useAppLogic = () => {
     handleSendEmailInvite: async (email: string) => {
       if (!activeMonthId) return;
       try {
-        const link = `${window.location.origin}/?join=${activeMonthId}`;
-        const res = await api.sendEmailInvite(activeMonthId, email, link);
-        alert(`¡Invitación enviada! Modo dev: Mira la URL aquí: ${res.previewUrl}`);
+        const link = `${window.location.origin}${window.location.pathname}?join=${activeMonthId}`;
+        await api.sendEmailInvite(activeMonthId, email, link);
+        alert('¡Invitación enviada correctamente!');
       } catch (error: any) {
         alert(error.message || 'Error enviando email');
       }

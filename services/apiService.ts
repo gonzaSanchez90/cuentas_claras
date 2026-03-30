@@ -9,7 +9,15 @@ async function apiFetch(endpoint: string, options: RequestInit = {}) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
-  const data = await response.json();
+  const raw = await response.text();
+  let data: any = null;
+
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    data = { error: raw || 'Respuesta invalida del servidor' };
+  }
+
   if (!response.ok) throw new Error(data.error || 'Error en la petición');
   return data;
 }

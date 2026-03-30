@@ -99,6 +99,21 @@ router.post('/:id/invite-email', async (req, res) => {
     const sender = dbGet('SELECT name FROM users WHERE id = ?', [req.userId]);
     if (!sender) return res.status(401).json({ error: 'Usuario no encontrado' });
 
+    const month = dbGet('SELECT id, creator_id, name FROM months WHERE id = ?', [id]);
+    if (!month) return res.status(404).json({ error: 'Grupo no encontrado' });
+
+    const canAccessMonth = dbGet(
+      'SELECT id FROM months WHERE id = ? AND creator_id = ?',
+      [id, req.userId]
+    ) || dbGet(
+      'SELECT id FROM participants WHERE month_id = ? AND user_id = ?',
+      [id, req.userId]
+    );
+
+    if (!canAccessMonth) {
+      return res.status(403).json({ error: 'No tienes permisos para invitar a este grupo' });
+    }
+
     const {
       RESEND_API_KEY,
       SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
@@ -130,7 +145,9 @@ router.post('/:id/invite-email', async (req, res) => {
 
       if (error) {
         console.error('[EMAIL] Error Resend:', error);
-        return res.status(500).json({ error: 'Error enviando el email con Resend.' });
+        return res.status(500).json({
+          error: error.message || 'Error enviando el email con Resend.',
+        });
       }
 
       console.log('[EMAIL] Invitación enviada con Resend a:', email, '| ID:', data?.id);
@@ -163,8 +180,10 @@ router.post('/:id/invite-email', async (req, res) => {
     console.log('[EMAIL] Invitación enviada a:', email, '| ID:', info.messageId);
     res.json({ message: 'Invitación enviada correctamente' });
   } catch (error) {
-    console.error('[EMAIL] Error enviando email:', error.message);
-    res.status(500).json({ error: 'Error enviando el email. Verifica la configuración de Resend o SMTP.' });
+    console.error('[EMAIL] Error enviando email:', error);
+    res.status(500).json({
+      error: error?.message || 'Error enviando el email. Verifica la configuración de Resend o SMTP.'
+    });
   }
 });
 
