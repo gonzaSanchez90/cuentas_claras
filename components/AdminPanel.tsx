@@ -4,6 +4,7 @@ import * as api from '../services/apiService';
 
 const AdminPanel: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
+  const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
 
   useEffect(() => {
     api.fetchAdminUsers().then(setUsers).catch(console.error);
@@ -14,8 +15,9 @@ const AdminPanel: React.FC = () => {
       try {
         await api.deleteAdminUser(id);
         setUsers(users.filter(u => u.id !== id));
+        setMessage({ type: 'success', text: 'Usuario eliminado correctamente.' });
       } catch (e: any) {
-        alert('Error: ' + e.message);
+        setMessage({ type: 'error', text: 'Error: ' + e.message });
       }
     }
   };
@@ -29,6 +31,12 @@ const AdminPanel: React.FC = () => {
           </button>
           <h1 className="text-2xl font-black flex items-center gap-3"><Users className="text-indigo-500" /> Panel de Administración</h1>
         </div>
+
+        {message && (
+          <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm font-bold ${message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-rose-500/10 border-rose-500/20 text-rose-300'}`}>
+            {message.text}
+          </div>
+        )}
         
         <div className="bg-[#1e293b] rounded-3xl p-6 border border-slate-700 shadow-2xl">
           <table className="w-full text-left">

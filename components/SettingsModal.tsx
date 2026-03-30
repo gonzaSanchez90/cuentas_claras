@@ -6,13 +6,14 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   config: MonthConfig | null;
-  onSave: (name: string, participants: Participant[], reassignments?: {from: string, to: string}[], emoji?: string) => void;
+  onSave: (name: string, participants: Participant[], reassignments?: {from: string, to: string}[], emoji?: string) => Promise<boolean>;
   isNew?: boolean;
+  mode?: 'full' | 'details' | 'participants';
   currentUser?: { name: string };
   expenses?: Expense[];
 }
 
-const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew, currentUser, expenses = [] }) => {
+const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew, mode = 'full', currentUser, expenses = [] }) => {
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('📅');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -95,7 +96,11 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
   };
 
   const totalPercentage = participants.reduce((acc, p) => acc + (parseFloat(p.pStr.replace(',', '.')) || 0), 0);
-  const isValid = Math.abs(totalPercentage - 100) < 0.2 && name.trim().length > 0 && participants.length > 0 && participants.every(p => p.name.trim() !== '');
+  const requiresDetails = mode === 'full' || mode === 'details';
+  const requiresParticipants = mode === 'full' || mode === 'participants';
+  const detailsValid = name.trim().length > 0;
+  const participantsValid = participants.length > 0 && participants.every(p => p.name.trim() !== '') && Math.abs(totalPercentage - 100) < 0.2;
+  const isValid = (!requiresDetails || detailsValid) && (!requiresParticipants || participantsValid);
 
   if (!isOpen) return null;
 
@@ -113,7 +118,7 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
                    <Settings size={20} />
                </div>
                <h2 className="text-lg font-black text-white uppercase tracking-tight">
-                 {isNew ? 'Crear Cálculo' : 'Crear cuentas'}
+                 {isNew ? 'Crear Cálculo' : mode === 'participants' ? 'Participantes' : mode === 'details' ? 'Editar cálculo' : 'Crear cuentas'}
                </h2>
             </div>
             <button onClick={onClose} className="p-2 text-slate-500 hover:bg-white/5 hover:text-white rounded-full transition-all">
@@ -125,7 +130,7 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
         <div className="p-6 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
           
           {/* Title & Emoji Section */}
-          <div className="space-y-4">
+           {requiresDetails && <div className="space-y-4">
              <div className="relative">
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 pl-1">Título</label>
                 <div className="flex gap-4">
@@ -179,10 +184,10 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
                    </div>
                 </div>
              </div>
-          </div>
+           </div>}
 
           {/* Participants section */}
-          <div>
+           {requiresParticipants && <div>
               <div className="flex items-center justify-between mb-4 pl-1">
                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Participantes</label>
                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${Math.abs(totalPercentage - 100) < 0.2 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-500/10 text-slate-400'}`}>
@@ -191,7 +196,7 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
               </div>
               <div className="space-y-3">
                   {participants.map((p, index) => (
-                      <div key={index} className="flex gap-3 items-center group/row">
+                    <div key={index} className="grid grid-cols-[minmax(0,1fr)_86px_40px] gap-2 items-center group/row">
                           <input 
                              type="text" 
                              value={p.name} 
@@ -200,21 +205,21 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
                                 newP[index].name = e.target.value;
                                 setParticipants(newP);
                              }}
-                             className="flex-1 h-12 px-4 bg-slate-900/50 border border-slate-800 rounded-xl outline-none text-sm font-bold text-white focus:border-indigo-500/50 transition-all shadow-inner"
+                              className="min-w-0 h-12 px-4 bg-slate-900/50 border border-slate-800 rounded-xl outline-none text-sm font-bold text-white focus:border-indigo-500/50 transition-all shadow-inner"
                              placeholder="Participante..."
                           />
-                          <div className="relative w-23 h-12">
+                            <div className="relative h-12">
                             <input
                                type="text"
                                value={p.pStr}
                                onChange={e => handlePercentageChange(index, e.target.value)}
                                onBlur={() => handleBlurAndBalance(index)}
-                               className="w-full h-full bg-slate-900 rounded-xl border border-slate-800 outline-none text-sm font-black text-indigo-400 text-center shadow-inner focus:border-indigo-500/30 transition-all px-2 pr-6"
+                               className="w-full h-full bg-slate-900 rounded-xl border border-slate-800 outline-none text-sm font-black text-indigo-400 text-center shadow-inner focus:border-indigo-500/30 transition-all px-2 pr-7"
                             />
                             <span className="absolute right-3 top-3.5 text-slate-600 text-[10px] font-black group-hover/row:text-indigo-600 transition-colors">%</span>
                           </div>
                           {participants.length > 1 && (
-                             <button onClick={() => handleDeleteAttempt(index)} className="w-12 h-12 flex items-center justify-center text-slate-600 hover:bg-rose-500/10 hover:text-rose-400 rounded-xl transition-all"><Trash2 size={18} /></button>
+                              <button onClick={() => handleDeleteAttempt(index)} className="w-10 h-10 flex items-center justify-center text-slate-600 hover:bg-rose-500/10 hover:text-rose-400 rounded-xl transition-all justify-self-end"><Trash2 size={18} /></button>
                           )}
                       </div>
                   ))}
@@ -244,13 +249,13 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
               >
                   <Plus size={16} /> Añadir Participante
               </button>
-          </div>
+              </div>}
         </div>
 
         {/* Action Button */}
         <div className="p-6 border-t border-white/5 bg-[#1e293b]/50">
           <button
-            onClick={() => {
+            onClick={async () => {
               if(isValid) {
                 const finalParticipants = participants.map(p => ({
                    id: p.id,
@@ -258,14 +263,14 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, config, onSave, isNew
                    splitPercentage: parseFloat(p.pStr) || 0,
                    isMe: p.isMe
                 }));
-                onSave(name, finalParticipants, pendingReassignments, emoji);
-                onClose();
+                const saved = await onSave(name, finalParticipants, pendingReassignments, emoji);
+                if (saved) onClose();
               }
             }}
             disabled={!isValid}
             className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all shadow-xl ${isValid ? 'bg-indigo-600 text-white shadow-indigo-600/30 hover:bg-indigo-500 hover:shadow-indigo-500/40 translate-y-0 active:scale-[0.98]' : 'bg-slate-800 text-slate-600 shadow-none cursor-not-allowed'}`}
           >
-            {isNew ? 'Comenzar Mes' : 'Guardar Cambios'}
+            {isNew ? 'Comenzar Mes' : mode === 'participants' ? 'Guardar Participantes' : mode === 'details' ? 'Guardar Detalles' : 'Guardar Cambios'}
           </button>
         </div>
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Settings, Copy, CheckCircle2, Plus, Search, X, Filter, MoreVertical, Edit2, Trash2, PieChart, Award, Banknote, Hourglass, AlertCircle, Mail, Send } from 'lucide-react';
+import { ArrowLeft, Copy, CheckCircle2, Plus, Search, X, Filter, MoreVertical, Edit2, Trash2, PieChart, Award, Banknote, Hourglass, AlertCircle, Mail, Send, UserPlus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { MonthConfig, Expense, BalanceResult, Category } from '../types';
 import { formatCurrency, formatDateLong } from '../utils/format';
@@ -15,7 +15,8 @@ interface MonthDetailViewProps {
   copied: boolean;
   openExpenseMenuId: string | null;
   onBack: () => void;
-  onSettings: () => void;
+    onEditDetails: () => void;
+    onManageParticipants: () => void;
   onSettle: () => void;
   onCopyLink: () => void;
   onAddExpense: () => void;
@@ -30,7 +31,7 @@ interface MonthDetailViewProps {
 const MonthDetailView: React.FC<MonthDetailViewProps> = ({ 
   activeMonth, activeBalance, activeMonthExpenses, expensesByDay, chartData, 
   categoryFilter, searchQuery, copied, openExpenseMenuId,
-  onBack, onSettings, onSettle, onCopyLink, onAddExpense, onSearch, 
+    onBack, onEditDetails, onManageParticipants, onSettle, onCopyLink, onAddExpense, onSearch, 
   onCategoryFilter, onEditExpense, onDeleteExpense, onSetOpenMenu, onSendEmailInvite
 }) => {
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -57,9 +58,14 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
              <h2 className="text-lg md:text-2xl font-black text-white truncate leading-tight uppercase tracking-tight">{activeMonth.emoji} {activeMonth.name}</h2>
              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{activeMonth.participants.length} Participantes</p>
           </div>
-          <button onClick={onSettings} className="p-3 border border-slate-700 rounded-2xl bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300 outline-none shadow-sm">
-            <Settings size={18} />
-          </button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={onEditDetails} className="p-3 border border-slate-700 rounded-2xl bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300 outline-none shadow-sm">
+                            <Edit2 size={18} />
+                        </button>
+                        <button onClick={onManageParticipants} className="p-3 border border-slate-700 rounded-2xl bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300 outline-none shadow-sm">
+                            <UserPlus size={18} />
+                        </button>
+                    </div>
         </div>
 
         <div className="text-center mb-10">

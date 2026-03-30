@@ -53,7 +53,8 @@ const App: React.FC = () => {
           isSyncing={state.isSyncing}
           onLogout={handlers.handleLogout}
           onSelectMonth={setters.setActiveMonthId}
-          onEditMonth={(id) => { setters.setActiveMonthId(id); setters.setIsSettingsModalOpen(true); }}
+          onEditMonth={(id) => { setters.setActiveMonthId(id); setters.setSettingsMode('details'); setters.setIsSettingsModalOpen(true); }}
+          onManageParticipants={(id) => { setters.setActiveMonthId(id); setters.setSettingsMode('participants'); setters.setIsSettingsModalOpen(true); }}
           onDeleteMonth={handlers.handleDeleteMonth}
           onNewMonth={() => setters.setIsNewMonthModalOpen(true)}
         />
@@ -70,7 +71,8 @@ const App: React.FC = () => {
             copied={state.copied}
             openExpenseMenuId={state.openExpenseMenuId}
             onBack={() => { setters.setActiveMonthId(null); setters.setSearchQuery(''); }}
-            onSettings={() => setters.setIsSettingsModalOpen(true)}
+            onEditDetails={() => { setters.setSettingsMode('details'); setters.setIsSettingsModalOpen(true); }}
+            onManageParticipants={() => { setters.setSettingsMode('participants'); setters.setIsSettingsModalOpen(true); }}
             onSettle={() => handlers.handleUpdateMonth(state.activeMonth?.name || '', state.activeMonth?.participants || [], [], state.activeMonth?.emoji || '📅', !state.activeMonth?.isClosed)}
             onCopyLink={handlers.copyInviteLink}
             onAddExpense={() => { setters.setEditingExpense(null); setters.setIsAddModalOpen(true); }}
@@ -100,6 +102,7 @@ const App: React.FC = () => {
         onClose={() => setters.setIsSettingsModalOpen(false)}
         config={state.activeMonth || null}
         onSave={state.activeMonthId ? handlers.handleUpdateMonth : handlers.handleCreateMonth}
+        mode={state.settingsMode}
         currentUser={state.user || undefined}
         expenses={state.activeMonthExpenses}
       />
@@ -124,6 +127,17 @@ const App: React.FC = () => {
           }}
           onCancel={() => setters.setDeleteConfirm(null)}
         />
+      )}
+
+      {state.notice && (
+        <div className="fixed bottom-4 left-1/2 z-[100] w-[calc(100%-2rem)] max-w-md -translate-x-1/2">
+          <div className={`rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-xl ${state.notice.type === 'success' ? 'bg-emerald-500/15 border-emerald-400/30 text-emerald-100' : state.notice.type === 'error' ? 'bg-rose-500/15 border-rose-400/30 text-rose-100' : 'bg-slate-800/90 border-white/10 text-slate-100'}`}>
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm font-bold leading-5">{state.notice.message}</p>
+              <button onClick={() => setters.setNotice(null)} className="text-current/70 hover:text-current text-lg leading-none">×</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

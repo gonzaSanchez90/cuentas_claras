@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MonthConfig, BalanceResult, ParticipantBalance } from '../types';
-import { ChevronRight, Users, CheckCircle2, MoreVertical, Edit2, Trash2, Calendar, CreditCard } from 'lucide-react';
+import { ChevronRight, Users, CheckCircle2, MoreVertical, Edit2, Trash2, Calendar, CreditCard, UserPlus } from 'lucide-react';
 
 interface Props {
   month: MonthConfig;
@@ -8,6 +8,7 @@ interface Props {
   myBalance?: ParticipantBalance;
   onClick: () => void;
   onEdit: (e: React.MouseEvent) => void;
+  onManageParticipants: (e: React.MouseEvent) => void;
   onDelete: (e: React.MouseEvent) => void;
 }
 
@@ -20,7 +21,7 @@ const formatCurrency = (amount: number) => {
   });
 };
 
-const MonthCard: React.FC<Props> = ({ month, balance, myBalance, onClick, onEdit, onDelete }) => {
+const MonthCard: React.FC<Props> = ({ month, balance, myBalance, onClick, onEdit, onManageParticipants, onDelete }) => {
   const [showMenu, setShowMenu] = useState(false);
   
   const isPositive = myBalance && myBalance.balance > 0;
@@ -53,15 +54,31 @@ const MonthCard: React.FC<Props> = ({ month, balance, myBalance, onClick, onEdit
                   Saldado
               </div>
           )}
-          <button 
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setShowMenu(!showMenu);
-                }}
-                className="p-2 text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all"
-             >
-                <MoreVertical size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(e); }}
+              className="w-10 h-10 rounded-2xl border border-white/10 bg-white/5 text-slate-300 hover:text-indigo-300 hover:border-indigo-500/30 hover:bg-indigo-500/10 transition-all flex items-center justify-center"
+              title="Editar detalles"
+            >
+              <Edit2 size={16} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onManageParticipants(e); }}
+              className="w-10 h-10 rounded-2xl border border-white/10 bg-white/5 text-slate-300 hover:text-emerald-300 hover:border-emerald-500/30 hover:bg-emerald-500/10 transition-all flex items-center justify-center"
+              title="Gestionar participantes"
+            >
+              <UserPlus size={16} />
+            </button>
+            <button 
+                  onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(!showMenu);
+                  }}
+                  className="p-2 text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+               >
+                  <MoreVertical size={20} />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 relative z-10">
@@ -116,7 +133,13 @@ const MonthCard: React.FC<Props> = ({ month, balance, myBalance, onClick, onEdit
                     onClick={(e) => { e.stopPropagation(); setShowMenu(false); onEdit(e); }}
                     className="w-full px-5 py-3 text-left text-sm font-bold text-slate-200 hover:bg-white/5 flex items-center gap-3 transition-colors"
                 >
-                    <Edit2 size={16} className="text-indigo-400" /> Editar Cálculo
+                  <Edit2 size={16} className="text-indigo-400" /> Editar Cálculo
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setShowMenu(false); onManageParticipants(e); }}
+                  className="w-full px-5 py-3 text-left text-sm font-bold text-slate-200 hover:bg-white/5 flex items-center gap-3 transition-colors"
+                >
+                  <UserPlus size={16} className="text-emerald-400" /> Gestionar Participantes
                 </button>
                 <div className="h-px bg-white/5 mx-2 my-1"></div>
                 <button 

@@ -13,12 +13,13 @@ interface DashboardViewProps {
   onLogout: () => void;
   onSelectMonth: (id: string) => void;
   onEditMonth: (id: string) => void;
+  onManageParticipants: (id: string) => void;
   onDeleteMonth: (id: string) => void;
   onNewMonth: () => void;
 }
 
 const DashboardView: React.FC<DashboardViewProps> = ({ 
-  user, months, expenses, isSyncing, onLogout, onSelectMonth, onEditMonth, onDeleteMonth, onNewMonth 
+  user, months, expenses, isSyncing, onLogout, onSelectMonth, onEditMonth, onManageParticipants, onDeleteMonth, onNewMonth 
 }) => {
   return (
     <div className="w-full md:w-[90%] lg:w-[85%] max-w-[1400px] mx-auto relative pb-24 h-full">
@@ -59,6 +60,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                      myBalance={myBal} 
                      onClick={() => onSelectMonth(month.id)} 
                      onEdit={(e) => { e.stopPropagation(); onEditMonth(month.id); }}
+                     onManageParticipants={(e) => { e.stopPropagation(); onManageParticipants(month.id); }}
                      onDelete={(e) => { e.stopPropagation(); onDeleteMonth(month.id); }}
                    />
                  </div>
