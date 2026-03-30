@@ -28,7 +28,7 @@ export const useAppLogic = () => {
   const [pendingParticipantId, setPendingParticipantId] = useState<string | null>(null);
   const [pendingParticipantName, setPendingParticipantName] = useState<string | null>(null);
 
-  const buildInviteUrl = (monthId: string) => `${window.location.origin}/#invite=${monthId}`;
+  const buildInviteUrl = (monthId: string) => `${window.location.origin}/index.html#invite=${monthId}`;
 
   const loadData = async () => {
     setIsSyncing(true);
@@ -76,7 +76,7 @@ export const useAppLogic = () => {
       }).catch(() => {
         alert('Enlace invalido o caducado');
         setInviteToken(null);
-        window.history.replaceState({}, '', '/');
+        window.history.replaceState({}, '', '/index.html');
         if (isAuthenticated) loadData();
       });
     } else {
@@ -122,12 +122,12 @@ export const useAppLogic = () => {
           await api.joinMonth(inviteToken, pendingParticipantId);
           alert('¡Cuenta creada y unida al grupo exitosamente!');
           setInviteToken(null); setInviteData(null); setPendingParticipantId(null); setPendingParticipantName(null);
-          window.history.replaceState({}, '', '/');
+          window.history.replaceState({}, '', '/index.html');
           loadData();
         } catch (error: any) {
           alert(error.message || 'No se pudo unir al grupo automáticamente');
           setInviteToken(null); setInviteData(null); setPendingParticipantId(null); setPendingParticipantName(null);
-          window.history.replaceState({}, '', '/');
+          window.history.replaceState({}, '', '/index.html');
           loadData();
         }
       }
@@ -200,12 +200,12 @@ export const useAppLogic = () => {
         await api.joinMonth(inviteToken, participantId);
         alert('Te has unido exitosamente!');
         setInviteToken(null); setInviteData(null); setPendingParticipantId(null); setPendingParticipantName(null);
-        window.history.replaceState({}, '', '/');
+        window.history.replaceState({}, '', '/index.html');
         loadData();
       } catch (error: any) { 
         alert(error.message || 'No se pudo unir'); 
         setInviteToken(null); setInviteData(null); setPendingParticipantId(null); setPendingParticipantName(null);
-        window.history.replaceState({}, '', '/');
+        window.history.replaceState({}, '', '/index.html');
         if (isAuthenticated) loadData();
       }
     },
