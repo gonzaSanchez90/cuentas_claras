@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react';
-import { ArrowLeft, Copy, CheckCircle2, Plus, Search, X, Filter, MoreVertical, Edit2, Trash2, PieChart, Award, Banknote, Hourglass, AlertCircle, Mail, Send, UserPlus } from 'lucide-react';
+import { ArrowLeft, Copy, CheckCircle2, Plus, Search, X, Filter, MoreVertical, Edit2, Trash2, PieChart, Award, Banknote, Hourglass, AlertCircle, Mail, Send, UserPlus, Lock } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { MonthConfig, Expense, BalanceResult, Category } from '../types';
 import { formatCurrency, formatDateLong } from '../utils/format';
@@ -41,6 +41,7 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const currencyLocked = activeMonthExpenses.length > 0;
 
   const handleSendEmail = async () => {
      if (!inviteEmail) return;
@@ -73,13 +74,21 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{activeMonth.participants.length} Participantes</p>
           </div>
           <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 bg-slate-800 border border-white/5 rounded-2xl p-1">
+                        <div className="flex items-center gap-1 bg-slate-800 border border-white/5 rounded-2xl p-1" title={currencyLocked ? 'Moneda bloqueada: ya hay gastos registrados' : undefined}>
                           {CURRENCIES.map(sym => (
-                            <button key={sym} onClick={() => onSetCurrency(sym)}
+                            <button
+                              key={sym}
+                              onClick={() => !currencyLocked && onSetCurrency(sym)}
+                              disabled={currencyLocked && currencySymbol !== sym}
                               className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black transition-all ${
-                                currencySymbol === sym ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                currencySymbol === sym
+                                  ? 'bg-indigo-600 text-white'
+                                  : currencyLocked
+                                    ? 'text-slate-700 cursor-not-allowed'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                               }`}>{sym}</button>
                           ))}
+                          {currencyLocked && <Lock size={10} className="text-slate-600 mx-0.5" />}
                         </div>
                         <button onClick={onEditDetails} className="p-3 border border-slate-700 rounded-2xl bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300 outline-none shadow-sm">
                             <Edit2 size={18} />
@@ -220,11 +229,11 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                 {chartData.length > 0 && (
                 <div className="bg-[#1e293b]/60 p-8 rounded-[40px] border border-white/5 shadow-2xl backdrop-blur-md">
                     <div className="flex items-center justify-between mb-8 px-2"><h3 className="text-[12px] font-black text-slate-400 uppercase tracking-[0.2em]">Distribución por Categoría</h3><PieChart size={18} className="text-indigo-500" /></div>
-                    <div className="h-72 w-full overflow-visible">
+                    <div className="h-72 w-full [&_svg]:overflow-visible">
                         <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 36, right: 24, left: 24, bottom: 72 }}>
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'black'}} interval={0} angle={-45} textAnchor="end" height={60} />
-                            <YAxis hide domain={[0, 'auto']} />
+                        <BarChart data={chartData} margin={{ top: 28, right: 16, left: 16, bottom: 8 }}>
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'black'}} interval={0} angle={-45} textAnchor="end" height={64} />
+                            <YAxis hide domain={[0, (dataMax: number) => dataMax * 1.25]} />
                             <Bar dataKey="value" radius={[12, 12, 12, 12]} barSize={40}>
                             {chartData.map((entry, index) => <Cell key={index} fill={index % 2 === 0 ? '#6366f1' : '#818cf8'} />)}
                             <LabelList dataKey="value" position="top" content={renderChartLabel} />
@@ -240,11 +249,11 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                 {chartData.length > 0 && (
                 <div className="bg-[#1e293b]/40 p-6 rounded-[32px] border border-slate-800 shadow-xl">
                     <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6 text-center">Resumen de Gastos</h3>
-                    <div className="h-56 w-full overflow-visible">
+                    <div className="h-56 w-full [&_svg]:overflow-visible">
                         <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 32, right: 20, left: 20, bottom: 60 }}>
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}} interval={0} angle={-45} textAnchor="end" height={50} />
-                            <YAxis hide domain={[0, 'auto']} />
+                        <BarChart data={chartData} margin={{ top: 28, right: 12, left: 12, bottom: 8 }}>
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}} interval={0} angle={-45} textAnchor="end" height={56} />
+                            <YAxis hide domain={[0, (dataMax: number) => dataMax * 1.25]} />
                             <Bar dataKey="value" radius={[8, 8, 8, 8]} barSize={32}>
                             {chartData.map((entry, index) => <Cell key={index} fill={index % 2 === 0 ? '#6366f1' : '#818cf8'} />)}
                             <LabelList dataKey="value" position="top" content={renderChartLabel} />

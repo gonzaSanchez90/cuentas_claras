@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, Loader2, TrendingUp, Wallet, ArrowUpRight, Plus } from 'lucide-react';
+import { LogOut, Loader2, TrendingUp, Wallet, ArrowUpRight, Plus, Lock } from 'lucide-react';
 import { MonthConfig, Expense, Participant } from '../types';
 import MonthCard from './MonthCard';
 import { formatCurrency } from '../utils/format';
@@ -26,6 +26,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   user, months, expenses, isSyncing, onLogout, onSelectMonth, onEditMonth, onManageParticipants, onDeleteMonth, onNewMonth,
   currencySymbol, onSetCurrency
 }) => {
+  const currencyLocked = expenses.length > 0;
   return (
     <div className="w-full md:w-[90%] lg:w-[85%] max-w-[1400px] mx-auto relative pb-24 h-full">
        <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-indigo-600/10 to-transparent pointer-events-none"></div>
@@ -41,20 +42,24 @@ const DashboardView: React.FC<DashboardViewProps> = ({
            <p className="text-slate-400 text-base font-semibold mt-2 pl-1">Gusto en verte de nuevo, <span className="text-indigo-400">{user?.name}</span></p>
          </div>
          <div className="flex items-center gap-3">
-           <div className="flex items-center gap-1 bg-slate-800/80 border border-white/5 rounded-2xl p-1 shadow-inner">
+           <div className="flex items-center gap-1 bg-slate-800/80 border border-white/5 rounded-2xl p-1 shadow-inner" title={currencyLocked ? 'Moneda bloqueada: ya hay gastos registrados' : undefined}>
              {CURRENCIES.map(sym => (
                <button
                  key={sym}
-                 onClick={() => onSetCurrency(sym)}
+                 onClick={() => !currencyLocked && onSetCurrency(sym)}
+                 disabled={currencyLocked && currencySymbol !== sym}
                  className={`px-3 py-2 rounded-xl text-xs font-black transition-all ${
                    currencySymbol === sym
                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
-                     : 'text-slate-400 hover:text-white hover:bg-white/5'
+                     : currencyLocked
+                       ? 'text-slate-600 cursor-not-allowed'
+                       : 'text-slate-400 hover:text-white hover:bg-white/5'
                  }`}
                >
                  {sym}
                </button>
              ))}
+             {currencyLocked && <Lock size={12} className="text-slate-600 mx-1" />}
            </div>
            <button onClick={onLogout} className="p-4 bg-slate-800/80 backdrop-blur-md border border-white/5 shadow-2xl text-slate-400 hover:text-rose-400 rounded-[20px] transition-all hover:scale-110 active:scale-95">
              <LogOut size={24} />
