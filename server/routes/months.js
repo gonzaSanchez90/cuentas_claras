@@ -115,9 +115,27 @@ router.post('/:id/invite-email', async (req, res) => {
     }
 
     const {
+      EMAIL_MODE,
       RESEND_API_KEY,
       SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
     } = process.env;
+
+    const simulateInvite = (reason) => {
+      console.log('[EMAIL][DEMO] Invitacion simulada:', {
+        reason,
+        monthId: id,
+        monthName: month.name,
+        sender: sender.name,
+        email,
+        link,
+      });
+
+      return res.json({
+        message: `Invitacion simulada para ${email}. Comparte el enlace manualmente si hace falta.`,
+        simulated: true,
+        inviteLink: link,
+      });
+    };
 
     const from = SMTP_FROM || 'Cuentas Claras <onboarding@resend.dev>';
     const subject = `¡${sender.name} te ha invitado a unirte a su grupo!`;
@@ -133,6 +151,10 @@ router.post('/:id/invite-email', async (req, res) => {
       </div>
     `;
 
+    if ((EMAIL_MODE || 'demo').toLowerCase() === 'demo') {
+      return simulateInvite('EMAIL_MODE=demo');
+    }
+
     if (RESEND_API_KEY) {
       const resend = new Resend(RESEND_API_KEY);
       const { data, error } = await resend.emails.send({
@@ -145,9 +167,7 @@ router.post('/:id/invite-email', async (req, res) => {
 
       if (error) {
         console.error('[EMAIL] Error Resend:', error);
-        return res.status(500).json({
-          error: error.message || 'Error enviando el email con Resend.',
-        });
+        return simulateInvite(`Resend fallo: ${error.message || 'error desconocido'}`);
       }
 
       console.log('[EMAIL] Invitación enviada con Resend a:', email, '| ID:', data?.id);
@@ -156,7 +176,7 @@ router.post('/:id/invite-email', async (req, res) => {
 
     if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
       console.warn('[EMAIL] No hay RESEND_API_KEY ni variables SMTP configuradas.');
-      return res.status(503).json({ error: 'El servicio de email no está configurado en el servidor.' });
+      return simulateInvite('Sin proveedor configurado');
     }
 
     const transporter = nodemailer.createTransport({
@@ -181,8 +201,10 @@ router.post('/:id/invite-email', async (req, res) => {
     res.json({ message: 'Invitación enviada correctamente' });
   } catch (error) {
     console.error('[EMAIL] Error enviando email:', error);
-    res.status(500).json({
-      error: error?.message || 'Error enviando el email. Verifica la configuración de Resend o SMTP.'
+    return res.json({
+      message: `Invitacion simulada. Motivo: ${error?.message || 'error desconocido'}`,
+      simulated: true,
+      inviteLink: req.body?.link,
     });
   }
 });

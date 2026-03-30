@@ -209,8 +209,8 @@ export const useAppLogic = () => {
       if (!activeMonthId) return;
       try {
         const link = `${window.location.origin}${window.location.pathname}?join=${activeMonthId}`;
-        await api.sendEmailInvite(activeMonthId, email, link);
-        alert('¡Invitación enviada correctamente!');
+        const result = await api.sendEmailInvite(activeMonthId, email, link);
+        alert(result?.message || '¡Invitación enviada correctamente!');
       } catch (error: any) {
         alert(error.message || 'Error enviando email');
       }
