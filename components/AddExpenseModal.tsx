@@ -31,16 +31,19 @@ const AddExpenseModal: React.FC<Props> = ({ isOpen, onClose, onSave, participant
         setCategory(expenseToEdit.category);
         setDate(expenseToEdit.date);
       } else if (participants.length > 0) {
-        // Reset only if creating new - default payer to the current logged-in user's participant
+        setTitle('');
+        setAmount('');
         const meParticipant = participants.find(p => currentUser ? p.userId === currentUser.id : p.userId);
         setPayerId(meParticipant?.id || participants[0].id || '');
         setCategory(Category.Misc);
         setDate(new Date().toISOString().split('T')[0]);
       }
+      setCatSearch('');
+      setShowCatPicker(false);
       // Focus the title input when modal opens
       setTimeout(() => titleInputRef.current?.focus(), 100);
     }
-  }, [isOpen, participants, expenseToEdit]);
+  }, [isOpen, participants, expenseToEdit, currentUser]);
 
   if (!isOpen) return null;
 
