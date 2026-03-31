@@ -150,7 +150,7 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
 
       <div className="p-6 md:p-10 relative z-10" onClick={() => onSetOpenMenu(null)}>
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
-            <div className="space-y-8">
+            <div className="space-y-8 min-w-0">
                 <button onClick={onAddExpense} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 md:py-5 rounded-2xl md:rounded-[24px] text-base md:text-lg font-black flex items-center justify-center gap-3 shadow-xl shadow-indigo-600/30 transition-all outline-none hover:-translate-y-1">
                     <Plus size={20} className="md:w-6 md:h-6" /> Añadir Gasto
                 </button>
@@ -162,7 +162,7 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
 
                 <div className="overflow-hidden">
                     <div className="flex items-center gap-2 mb-4 pl-1"><Filter size={14} className="text-slate-500"/><h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Filtrar por Categoría</h3></div>
-                    <div className="flex overflow-x-auto pb-4 gap-2.5 custom-scrollbar no-scrollbar-on-mobile">
+                    <div className="flex flex-wrap gap-2.5">
                         <button onClick={() => onCategoryFilter(null)} className={`px-5 py-2.5 rounded-2xl text-[10px] font-black whitespace-nowrap border transition-all uppercase tracking-wider ${!categoryFilter ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/20 scale-105' : 'bg-slate-900/80 border-slate-700/50 text-slate-400 hover:border-indigo-500/30 hover:text-slate-200'}`}>Ver Todos</button>
                         {Object.values(Category).sort((a,b) => a.localeCompare(b)).filter(cat => activeMonthExpenses.some(e => e.category === cat)).map(cat => (
                             <button key={cat} onClick={() => onCategoryFilter(cat === categoryFilter ? null : cat)} className={`px-5 py-2.5 rounded-2xl text-[10px] font-black whitespace-nowrap border transition-all uppercase tracking-wider flex items-center gap-2 ${categoryFilter === cat ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/20 scale-105' : 'bg-slate-900/80 border-slate-700/50 text-slate-400 hover:border-indigo-500/30 hover:text-slate-200'}`}>{cat}</button>
