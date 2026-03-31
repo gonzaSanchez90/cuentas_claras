@@ -7,19 +7,18 @@ interface Props {
   month: MonthConfig;
   balance: BalanceResult;
   myBalance?: ParticipantBalance;
-  currencySymbol: string;
   onClick: () => void;
   onEdit: (e: React.MouseEvent) => void;
   onManageParticipants: (e: React.MouseEvent) => void;
   onDelete: (e: React.MouseEvent) => void;
 }
 
-const MonthCard: React.FC<Props> = ({ month, balance, myBalance, currencySymbol, onClick, onEdit, onManageParticipants, onDelete }) => {
+const MonthCard: React.FC<Props> = ({ month, balance, myBalance, onClick, onEdit, onManageParticipants, onDelete }) => {
   const [showMenu, setShowMenu] = useState(false);
   
   const isPositive = myBalance && myBalance.balance > 0;
   const isZero = myBalance ? Math.abs(myBalance.balance) < 0.1 : true;
-  const displayValue = myBalance ? formatCurrency(Math.abs(myBalance.balance), currencySymbol) : '0';
+  const displayValue = myBalance ? formatCurrency(Math.abs(myBalance.balance)) : '0';
 
   return (
     <div className="relative group/card h-full">
@@ -79,7 +78,7 @@ const MonthCard: React.FC<Props> = ({ month, balance, myBalance, currencySymbol,
             <div className="flex items-center gap-2 text-slate-500">
                 <CreditCard size={14} />
                 <p className="text-xs font-bold uppercase tracking-widest mt-0.5">
-                   Total: {formatCurrency(balance.totalSpent, currencySymbol)}
+                   Total: {formatCurrency(balance.totalSpent)}
                 </p>
             </div>
         </div>
