@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { ArrowLeft, Copy, CheckCircle2, Plus, Search, X, Filter, MoreVertical, Edit2, Trash2, PieChart, Award, Banknote, Hourglass, AlertCircle, Mail, Send, UserPlus } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Cell, LabelList } from 'recharts';
 import { MonthConfig, Expense, BalanceResult, Category } from '../types';
 import { formatCurrency, formatDateLong } from '../utils/format';
 
@@ -50,8 +50,9 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
     const renderChartLabel = (props: any) => {
         const x = Number(props.x) + Number(props.width) / 2;
         const y = Math.max(Number(props.y) - 10, 18);
+        const fontSize = chartData.length > 9 ? 8 : chartData.length > 6 ? 9 : chartData.length > 4 ? 10 : 12;
         return (
-            <text x={x} y={y} fill="#fff" fontSize={12} fontWeight="900" textAnchor="middle">
+            <text x={x} y={y} fill="#fff" fontSize={fontSize} fontWeight="900" textAnchor="middle">
                 {formatCurrency(Number(props.value || 0))}
             </text>
         );
@@ -61,21 +62,23 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
     <div className="w-full md:w-[90%] lg:w-[85%] max-w-[1400px] mx-auto border-x border-white/5 md:shadow-2xl md:shadow-black/40 pb-24 min-h-screen">
       <header className="bg-[#0f172a] px-6 pt-10 pb-8 shadow-xl relative z-30 rounded-b-[40px] border-b border-white/5">
         <div className="flex justify-between items-center mb-10">
-          <button onClick={onBack} className="p-3 border border-slate-700 rounded-2xl bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300 outline-none shadow-sm">
-            <ArrowLeft size={18} />
-          </button>
-          <div className="text-center flex-1 mx-4 overflow-hidden">
+          <div className="flex items-center w-[88px]">
+            <button onClick={onBack} className="p-3 border border-slate-700 rounded-2xl bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300 outline-none shadow-sm">
+              <ArrowLeft size={18} />
+            </button>
+          </div>
+          <div className="text-center flex-1 overflow-hidden">
              <h2 className="text-lg md:text-2xl font-black text-white truncate leading-tight uppercase tracking-tight">{activeMonth.emoji} {activeMonth.name}</h2>
              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{activeMonth.participants.length} Participantes</p>
           </div>
-          <div className="flex items-center gap-2">
-                        <button onClick={onEditDetails} className="p-3 border border-slate-700 rounded-2xl bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300 outline-none shadow-sm">
-                            <Edit2 size={18} />
-                        </button>
-                        <button onClick={onManageParticipants} className="p-3 border border-slate-700 rounded-2xl bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300 outline-none shadow-sm">
-                            <UserPlus size={18} />
-                        </button>
-                    </div>
+          <div className="flex items-center gap-2 w-[88px] justify-end">
+            <button onClick={onEditDetails} className="p-3 border border-slate-700 rounded-2xl bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300 outline-none shadow-sm">
+              <Edit2 size={18} />
+            </button>
+            <button onClick={onManageParticipants} className="p-3 border border-slate-700 rounded-2xl bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300 outline-none shadow-sm">
+              <UserPlus size={18} />
+            </button>
+          </div>
         </div>
 
         <div className="text-center mb-10">
@@ -208,17 +211,15 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                     <div className="bg-[#1e293b]/40 p-6 rounded-[32px] border border-slate-800 shadow-xl">
                         <div className="flex items-center justify-between mb-6 px-1"><h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Distribución por Categoría</h3><PieChart size={16} className="text-indigo-500" /></div>
                         {chartData.length > 0 ? (
-                        <div className="h-56 w-full [&_svg]:overflow-visible">
-                            <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={chartData} margin={{ top: 28, right: 12, left: 12, bottom: 8 }}>
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}} interval={0} angle={-45} textAnchor="end" height={56} />
+                        <div className="w-full overflow-x-auto pb-1 [&_svg]:overflow-visible">
+                            <BarChart width={Math.max(260, chartData.length * 48)} height={224} data={chartData} margin={{ top: 28, right: 8, left: 8, bottom: 8 }}>
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 9, fontWeight: 'bold'}} interval={0} angle={-45} textAnchor="end" height={chartData.length > 6 ? 68 : 56} />
                                 <YAxis hide domain={[0, (dataMax: number) => dataMax * 1.25]} />
-                                <Bar dataKey="value" radius={[8, 8, 8, 8]} barSize={32}>
+                                <Bar dataKey="value" radius={[8, 8, 8, 8]} barSize={28}>
                                 {chartData.map((entry, index) => <Cell key={index} fill={index % 2 === 0 ? '#6366f1' : '#818cf8'} />)}
                                 <LabelList dataKey="value" position="top" content={renderChartLabel} />
                                 </Bar>
                             </BarChart>
-                            </ResponsiveContainer>
                         </div>
                         ) : (
                         <div className="h-40 flex flex-col items-center justify-center gap-3">
@@ -234,17 +235,15 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                 <div className="bg-[#1e293b]/60 p-8 rounded-[40px] border border-white/5 shadow-2xl backdrop-blur-md">
                     <div className="flex items-center justify-between mb-8 px-2"><h3 className="text-[12px] font-black text-slate-400 uppercase tracking-[0.2em]">Distribución por Categoría</h3><PieChart size={18} className="text-indigo-500" /></div>
                     {chartData.length > 0 ? (
-                    <div className="h-72 w-full [&_svg]:overflow-visible">
-                        <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 28, right: 16, left: 16, bottom: 8 }}>
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'black'}} interval={0} angle={-45} textAnchor="end" height={64} />
+                    <div className="w-full overflow-x-auto pb-1 [&_svg]:overflow-visible">
+                        <BarChart width={Math.max(296, chartData.length * 56)} height={288} data={chartData} margin={{ top: 28, right: 8, left: 8, bottom: 8 }}>
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}} interval={0} angle={-45} textAnchor="end" height={chartData.length > 6 ? 76 : 64} />
                             <YAxis hide domain={[0, (dataMax: number) => dataMax * 1.25]} />
-                            <Bar dataKey="value" radius={[12, 12, 12, 12]} barSize={40}>
+                            <Bar dataKey="value" radius={[10, 10, 10, 10]} barSize={36}>
                             {chartData.map((entry, index) => <Cell key={index} fill={index % 2 === 0 ? '#6366f1' : '#818cf8'} />)}
                             <LabelList dataKey="value" position="top" content={renderChartLabel} />
                             </Bar>
                         </BarChart>
-                        </ResponsiveContainer>
                     </div>
                     ) : (
                     <div className="h-72 flex flex-col items-center justify-center gap-4">
