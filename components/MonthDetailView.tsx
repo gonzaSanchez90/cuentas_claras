@@ -149,7 +149,7 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
       </header>
 
       <div className="p-6 md:p-10 relative z-10" onClick={() => onSetOpenMenu(null)}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
             <div className="space-y-8">
                 <button onClick={onAddExpense} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 md:py-5 rounded-2xl md:rounded-[24px] text-base md:text-lg font-black flex items-center justify-center gap-3 shadow-xl shadow-indigo-600/30 transition-all outline-none hover:-translate-y-1">
                     <Plus size={20} className="md:w-6 md:h-6" /> Añadir Gasto
