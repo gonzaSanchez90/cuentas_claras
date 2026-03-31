@@ -97,6 +97,22 @@ export const useAppLogic = () => {
 
   const activeMonth = useMemo(() => months.find(m => m.id === activeMonthId), [months, activeMonthId]);
   const activeMonthExpenses = useMemo(() => expenses.filter(e => e.monthId === activeMonthId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [expenses, activeMonthId]);
+
+  // Sincronizar navegación del navegador con la vista activa
+  useEffect(() => {
+    if (activeMonthId) {
+      window.history.pushState({ monthId: activeMonthId }, '', window.location.pathname);
+    }
+  }, [activeMonthId]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveMonthId(null);
+      setSearchQuery('');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   
   const filteredExpenses = useMemo(() => {
       return activeMonthExpenses.filter(e => {
