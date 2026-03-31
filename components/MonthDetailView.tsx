@@ -202,12 +202,38 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                         )
                     ))}
                 </div>
+
+                {/* Gráfico mobile — se muestra bajo la lista en pantallas pequeñas */}
+                <div className="lg:hidden">
+                    <div className="bg-[#1e293b]/40 p-6 rounded-[32px] border border-slate-800 shadow-xl">
+                        <div className="flex items-center justify-between mb-6 px-1"><h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Distribución por Categoría</h3><PieChart size={16} className="text-indigo-500" /></div>
+                        {chartData.length > 0 ? (
+                        <div className="h-56 w-full [&_svg]:overflow-visible">
+                            <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartData} margin={{ top: 28, right: 12, left: 12, bottom: 8 }}>
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}} interval={0} angle={-45} textAnchor="end" height={56} />
+                                <YAxis hide domain={[0, (dataMax: number) => dataMax * 1.25]} />
+                                <Bar dataKey="value" radius={[8, 8, 8, 8]} barSize={32}>
+                                {chartData.map((entry, index) => <Cell key={index} fill={index % 2 === 0 ? '#6366f1' : '#818cf8'} />)}
+                                <LabelList dataKey="value" position="top" content={renderChartLabel} />
+                                </Bar>
+                            </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                        ) : (
+                        <div className="h-40 flex flex-col items-center justify-center gap-3">
+                            <PieChart size={24} className="text-indigo-500/40" />
+                            <p className="text-slate-500 font-bold text-xs text-center">Aún no hay gastos registrados</p>
+                        </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             <div className="hidden lg:block sticky top-32 space-y-8">
-                {chartData.length > 0 && (
                 <div className="bg-[#1e293b]/60 p-8 rounded-[40px] border border-white/5 shadow-2xl backdrop-blur-md">
                     <div className="flex items-center justify-between mb-8 px-2"><h3 className="text-[12px] font-black text-slate-400 uppercase tracking-[0.2em]">Distribución por Categoría</h3><PieChart size={18} className="text-indigo-500" /></div>
+                    {chartData.length > 0 ? (
                     <div className="h-72 w-full [&_svg]:overflow-visible">
                         <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData} margin={{ top: 28, right: 16, left: 16, bottom: 8 }}>
@@ -220,28 +246,16 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                         </BarChart>
                         </ResponsiveContainer>
                     </div>
-                </div>
-                )}
-            </div>
-
-            <div className="lg:hidden">
-                {chartData.length > 0 && (
-                <div className="bg-[#1e293b]/40 p-6 rounded-[32px] border border-slate-800 shadow-xl">
-                    <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6 text-center">Resumen de Gastos</h3>
-                    <div className="h-56 w-full [&_svg]:overflow-visible">
-                        <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 28, right: 12, left: 12, bottom: 8 }}>
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}} interval={0} angle={-45} textAnchor="end" height={56} />
-                            <YAxis hide domain={[0, (dataMax: number) => dataMax * 1.25]} />
-                            <Bar dataKey="value" radius={[8, 8, 8, 8]} barSize={32}>
-                            {chartData.map((entry, index) => <Cell key={index} fill={index % 2 === 0 ? '#6366f1' : '#818cf8'} />)}
-                            <LabelList dataKey="value" position="top" content={renderChartLabel} />
-                            </Bar>
-                        </BarChart>
-                        </ResponsiveContainer>
+                    ) : (
+                    <div className="h-72 flex flex-col items-center justify-center gap-4">
+                        <div className="w-16 h-16 rounded-[20px] bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                            <PieChart size={28} className="text-indigo-500/50" />
+                        </div>
+                        <p className="text-slate-500 font-bold text-sm text-center">Aún no hay gastos</p>
+                        <p className="text-slate-600 text-xs text-center">Los datos aparecerán aquí una vez que agregues tu primer gasto</p>
                     </div>
+                    )}
                 </div>
-                )}
             </div>
         </div>
       </div>
