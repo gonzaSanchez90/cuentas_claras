@@ -164,12 +164,12 @@ const MonthDetailView: React.FC<MonthDetailViewProps> = ({
                     {searchQuery && <button onClick={() => onSearch('')} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 hover:bg-white/5 rounded-full transition-all"><X size={20} /></button>}
                 </div>
 
-                <div className="overflow-hidden">
+                <div className="px-1">
                     <div className="flex items-center gap-2 mb-4 pl-1"><Filter size={14} className="text-slate-500"/><h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Filtrar por Categoría</h3></div>
-                    <div className="flex flex-wrap gap-2.5">
-                        <button onClick={() => onCategoryFilter(null)} className={`px-5 py-2.5 rounded-2xl text-[10px] font-black whitespace-nowrap border transition-all uppercase tracking-wider ${!categoryFilter ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/20 scale-105' : 'bg-slate-900/80 border-slate-700/50 text-slate-400 hover:border-indigo-500/30 hover:text-slate-200'}`}>Ver Todos</button>
+                    <div className="flex flex-wrap gap-2.5 pb-1">
+                        <button onClick={() => onCategoryFilter(null)} className={`px-5 py-2.5 rounded-[18px] text-[10px] font-black whitespace-nowrap border transition-all uppercase tracking-wider ${!categoryFilter ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/20 scale-105' : 'bg-slate-900/80 border-slate-700/50 text-slate-400 hover:border-indigo-500/30 hover:text-slate-200'}`}>Ver Todos</button>
                         {Object.values(Category).sort((a,b) => a.localeCompare(b)).filter(cat => activeMonthExpenses.some(e => e.category === cat)).map(cat => (
-                            <button key={cat} onClick={() => onCategoryFilter(cat === categoryFilter ? null : cat)} className={`px-5 py-2.5 rounded-2xl text-[10px] font-black whitespace-nowrap border transition-all uppercase tracking-wider flex items-center gap-2 ${categoryFilter === cat ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/20 scale-105' : 'bg-slate-900/80 border-slate-700/50 text-slate-400 hover:border-indigo-500/30 hover:text-slate-200'}`}>{cat}</button>
+                            <button key={cat} onClick={() => onCategoryFilter(cat === categoryFilter ? null : cat)} className={`px-5 py-2.5 rounded-[18px] text-[10px] font-black whitespace-nowrap border transition-all uppercase tracking-wider flex items-center gap-2 ${categoryFilter === cat ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/20 scale-105' : 'bg-slate-900/80 border-slate-700/50 text-slate-400 hover:border-indigo-500/30 hover:text-slate-200'}`}>{cat}</button>
                         ))}
                     </div>
                 </div>
