@@ -34,10 +34,6 @@ RUN cd server && npm install --omit=dev
 # Exponer el puerto
 EXPOSE 3001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:3001/api/public/health || exit 1
-
 # Definir variables de entorno en runtime
 ENV NODE_ENV=production
 ENV PORT=3001
