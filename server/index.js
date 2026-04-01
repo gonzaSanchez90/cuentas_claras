@@ -3,6 +3,14 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// Evitar que errores no capturados maten el proceso
+process.on('uncaughtException', (err) => {
+  console.error('❌ uncaughtException:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ unhandledRejection:', reason);
+});
+
 // Importar la inicialización de BD
 import { initDatabase } from './database.js';
 
