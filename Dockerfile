@@ -38,5 +38,5 @@ EXPOSE 3001
 ENV NODE_ENV=production
 ENV PORT=3001
 
-# Iniciar el servidor
-CMD ["npm", "start"]
+# Iniciar el servidor directamente con node (sin npm wrapper)
+CMD ["node", "server/index.js"]
