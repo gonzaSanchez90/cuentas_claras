@@ -51,7 +51,7 @@ export interface ParticipantBalance {
   name: string;
   totalPaid: number;
   fairShare: number;
-  balance: number; // Positivo: le deben, Negativo: debe
+  balance: number; // Positivo: le deben, Negativo: debes
   splitPercentage: number;
 }
 

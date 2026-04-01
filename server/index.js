@@ -60,4 +60,7 @@ async function start() {
   });
 }
 
-start();
+start().catch((err) => {
+  console.error('❌ Fatal error al iniciar el servidor:', err);
+  process.exit(1);
+});

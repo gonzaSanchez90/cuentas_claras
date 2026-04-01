@@ -3,6 +3,10 @@ import { dbGet, dbAll } from '../database.js';
 
 const router = Router();
 
+router.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 router.get('/months/:id/invite', (req, res) => {
   try {
     const { id } = req.params;

@@ -1,9 +1,11 @@
 import initSqlJs from 'sql.js';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
+import { createRequire } from 'module';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const _require = createRequire(import.meta.url);
 const dataDir = path.join(__dirname, 'data');
 const dbPath = path.join(dataDir, 'cuentas_claras.db');
 const legacyDbPath = path.join(__dirname, 'cuentas_claras.db');
@@ -27,7 +29,13 @@ if (fs.existsSync(legacyDbPath) && !fs.existsSync(dbPath)) {
 let db = null;
 
 export async function initDatabase() {
-  const SQL = await initSqlJs();
+  const wasmPath = _require.resolve('sql.js/dist/sql-wasm.wasm');
+  const SQL = await initSqlJs({
+    locateFile: (file) => {
+      if (file === 'sql-wasm.wasm') return wasmPath;
+      return file;
+    }
+  });
 
   if (fs.existsSync(dbPath)) {
     const buffer = fs.readFileSync(dbPath);
