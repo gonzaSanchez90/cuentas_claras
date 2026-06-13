@@ -2,6 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
+
+// Cargar variables de entorno desde la raiz del proyecto
+const __require = createRequire(import.meta.url);
+try {
+  const dotenv = __require('dotenv');
+  dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.env') });
+} catch (e) { /* dotenv opcional */ }
 
 // Evitar que errores no capturados maten el proceso
 process.on('uncaughtException', (err) => {
