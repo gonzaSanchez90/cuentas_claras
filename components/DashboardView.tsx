@@ -27,12 +27,17 @@ const DashboardView: React.FC<DashboardViewProps> = ({
        <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
-       <header className="bg-transparent p-10 relative z-10 flex justify-between items-center">
+       <header className="bg-transparent p-10 relative z-10 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
          <div>
-           <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white flex items-center gap-3">
-             <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-2xl shadow-indigo-600/40">CC</div>
-             Cuentas Claras
-           </h1>
+           <div className="flex items-center gap-3 flex-wrap">
+             <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white flex items-center gap-3">
+               <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-2xl shadow-indigo-600/40">CC</div>
+               Cuentas Claras
+             </h1>
+             <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full flex items-center gap-1.5 shadow-lg shadow-indigo-500/5 select-none animate-pulse">
+               🚀 Plataforma Migrada a Vercel
+             </span>
+           </div>
            <p className="text-slate-400 text-base font-semibold mt-2 pl-1">Gusto en verte de nuevo, <span className="text-indigo-400">{user?.name}</span></p>
          </div>
          <div className="flex items-center gap-3">

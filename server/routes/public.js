@@ -7,13 +7,13 @@ router.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-router.get('/months/:id/invite', (req, res) => {
+router.get('/months/:id/invite', async (req, res) => {
   try {
     const { id } = req.params;
-    const month = dbGet('SELECT id, name, creator_id, emoji FROM months WHERE id = ?', [id]);
+    const month = await dbGet('SELECT id, name, creator_id, emoji FROM months WHERE id = ?', [id]);
     if (!month) return res.status(404).json({ error: 'Grupo no encontrado' });
 
-    const participants = dbAll('SELECT id, name, user_id FROM participants WHERE month_id = ?', [id]);
+    const participants = await dbAll('SELECT id, name, user_id FROM participants WHERE month_id = ?', [id]);
     
     res.json({
       id: month.id,

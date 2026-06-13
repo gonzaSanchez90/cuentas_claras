@@ -4,13 +4,13 @@ import { dbRun, dbGet, dbAll } from '../database.js';
 const router = Router();
 
 // GET /api/expenses
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { monthId } = req.query;
 
     let expenses;
     if (monthId) {
-      const check = dbGet(`
+      const check = await dbGet(`
         SELECT m.id 
         FROM months m 
         LEFT JOIN participants p ON m.id = p.month_id 
@@ -19,7 +19,7 @@ router.get('/', (req, res) => {
 
       if (!check) return res.status(404).json({ error: 'Grupo no encontrado o no tienes acceso' });
 
-      expenses = dbAll(`
+      expenses = await dbAll(`
         SELECT e.*, p.name as payer_name 
         FROM expenses e
         JOIN participants p ON e.payer_participant_id = p.id
@@ -27,7 +27,7 @@ router.get('/', (req, res) => {
         ORDER BY e.date DESC, e.created_at DESC
       `, [monthId]);
     } else {
-      expenses = dbAll(`
+      expenses = await dbAll(`
         SELECT DISTINCT e.*, p.name as payer_name
         FROM expenses e
         JOIN participants p ON e.payer_participant_id = p.id
@@ -56,7 +56,7 @@ router.get('/', (req, res) => {
 });
 
 // POST /api/expenses
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { monthId, title, amount, payerParticipantId, date, category, note } = req.body;
 
@@ -65,7 +65,7 @@ router.post('/', (req, res) => {
     }
 
     // Verificar que el usuario tiene acceso a este mes (es creador o tiene un slot de participante)
-    const hasAccess = dbGet(`
+    const hasAccess = await dbGet(`
       SELECT 1 FROM months WHERE id = ? AND creator_id = ?
       UNION
       SELECT 1 FROM participants WHERE month_id = ? AND user_id = ?
@@ -74,12 +74,12 @@ router.post('/', (req, res) => {
     if (!hasAccess) return res.status(403).json({ error: 'No tienes acceso a este grupo' });
 
     // Verificar si el que paga existe en el grupo
-    const validParticipant = dbGet('SELECT * FROM participants WHERE id = ? AND month_id = ?', [payerParticipantId, monthId]);
+    const validParticipant = await dbGet('SELECT * FROM participants WHERE id = ? AND month_id = ?', [payerParticipantId, monthId]);
     if (!validParticipant) return res.status(400).json({ error: 'Ese participante no pertenece al grupo' });
 
     const expenseId = Math.random().toString(36).substring(2, 9);
 
-    dbRun(
+    await dbRun(
       'INSERT INTO expenses (id, month_id, created_by, payer_participant_id, title, amount, date, category, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [expenseId, monthId, req.userId, payerParticipantId, title, amount, date, category, note || null]
     );
@@ -103,18 +103,18 @@ router.post('/', (req, res) => {
 });
 
 // PUT /api/expenses/:id
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { title, amount, payerParticipantId, date, category, note } = req.body;
 
-    const expense = dbGet('SELECT * FROM expenses WHERE id = ?', [id]);
+    const expense = await dbGet('SELECT * FROM expenses WHERE id = ?', [id]);
     if (!expense) return res.status(404).json({ error: 'Gasto no encontrado' });
 
     // Creador del gasto puede editarlo
     if (expense.created_by !== req.userId) {
        // O el creador del mes
-       const month = dbGet('SELECT creator_id FROM months WHERE id = ?', [expense.month_id]);
+       const month = await dbGet('SELECT creator_id FROM months WHERE id = ?', [expense.month_id]);
        if (month.creator_id !== req.userId) {
           return res.status(403).json({ error: 'Sin permisos para editar este gasto' });
        }
@@ -122,11 +122,11 @@ router.put('/:id', (req, res) => {
 
     // Verificar si el nuevo pagador pertenece al grupo si se cambia
     if (payerParticipantId) {
-        const validParticipant = dbGet('SELECT * FROM participants WHERE id = ? AND month_id = ?', [payerParticipantId, expense.month_id]);
+        const validParticipant = await dbGet('SELECT * FROM participants WHERE id = ? AND month_id = ?', [payerParticipantId, expense.month_id]);
         if (!validParticipant) return res.status(400).json({ error: 'El participante no pertenece a este grupo' });
     }
 
-    dbRun(`
+    await dbRun(`
       UPDATE expenses 
       SET 
         title = COALESCE(?, title),
@@ -146,19 +146,19 @@ router.put('/:id', (req, res) => {
 });
 
 // DELETE /api/expenses/:id
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const expense = dbGet('SELECT * FROM expenses WHERE id = ?', [id]);
+    const expense = await dbGet('SELECT * FROM expenses WHERE id = ?', [id]);
     if (!expense) return res.status(404).json({ error: 'Gasto no encontrado' });
 
     // Creador del mes o creador del gasto
-    const month = dbGet('SELECT creator_id FROM months WHERE id = ?', [expense.month_id]);
+    const month = await dbGet('SELECT creator_id FROM months WHERE id = ?', [expense.month_id]);
     if (month.creator_id !== req.userId && expense.created_by !== req.userId) {
       return res.status(403).json({ error: 'Sin permisos' });
     }
 
-    dbRun('DELETE FROM expenses WHERE id = ?', [id]);
+    await dbRun('DELETE FROM expenses WHERE id = ?', [id]);
     res.json({ message: 'Gasto eliminado' });
   } catch (error) {
     res.status(500).json({ error: 'Error' });

@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'cuentas-claras-secret-key-2026';
 // ============================================================
 // POST /api/auth/register  →  Crear cuenta nueva
 // ============================================================
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
   try {
     const { email, password, name } = req.body;
 
@@ -22,13 +22,13 @@ router.post('/register', (req, res) => {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
     }
 
-    const existing = dbGet('SELECT id FROM users WHERE email = ?', [email]);
+    const existing = await dbGet('SELECT id FROM users WHERE email = ?', [email]);
     if (existing) {
       return res.status(409).json({ error: 'Ya existe una cuenta con ese email' });
     }
 
     const hashedPassword = bcrypt.hashSync(password, 10);
-    const result = dbRun(
+    const result = await dbRun(
       'INSERT INTO users (email, password, name) VALUES (?, ?, ?)',
       [email, hashedPassword, name]
     );
@@ -53,7 +53,7 @@ router.post('/register', (req, res) => {
 // ============================================================
 // POST /api/auth/login  →  Iniciar sesión
 // ============================================================
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -61,7 +61,7 @@ router.post('/login', (req, res) => {
       return res.status(400).json({ error: 'Email y contraseña son obligatorios' });
     }
 
-    const user = dbGet('SELECT * FROM users WHERE email = ?', [email]);
+    const user = await dbGet('SELECT * FROM users WHERE email = ?', [email]);
     if (!user) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
@@ -88,9 +88,9 @@ router.post('/login', (req, res) => {
 // ============================================================
 // GET /api/auth/me  →  Obtener usuario actual
 // ============================================================
-router.get('/me', authMiddleware, (req, res) => {
+router.get('/me', authMiddleware, async (req, res) => {
   try {
-    const user = dbGet('SELECT id, email, name, created_at FROM users WHERE id = ?', [req.userId]);
+    const user = await dbGet('SELECT id, email, name, created_at FROM users WHERE id = ?', [req.userId]);
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }

@@ -6,9 +6,9 @@ import { Resend } from 'resend';
 const router = Router();
 
 // GET /api/months  →  Listar meses donde el usuario es creador O participante
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const months = dbAll(`
+    const months = await dbAll(`
       SELECT DISTINCT m.* 
       FROM months m
       LEFT JOIN participants p ON m.id = p.month_id
@@ -17,9 +17,10 @@ router.get('/', (req, res) => {
     `, [req.userId, req.userId]);
 
     // Llenar los participantes
-    const result = months.map(m => {
-      const participants = dbAll('SELECT * FROM participants WHERE month_id = ?', [m.id]);
-      return {
+    const result = [];
+    for (const m of months) {
+      const participants = await dbAll('SELECT * FROM participants WHERE month_id = ?', [m.id]);
+      result.push({
         id: m.id,
         name: m.name,
         emoji: m.emoji,
@@ -32,8 +33,8 @@ router.get('/', (req, res) => {
           splitPercentage: p.split_percentage,
           userId: p.user_id
         }))
-      };
-    });
+      });
+    }
 
     res.json(result);
   } catch (error) {
@@ -44,13 +45,13 @@ router.get('/', (req, res) => {
 
 // GET /api/months/:id/invite  →  Obtener info de un mes p\xFAblicamente (para invitaciones)
 // Esto lo usaremos cuando un usuario invitado pica el enlace
-router.get('/:id/invite', (req, res) => {
+router.get('/:id/invite', async (req, res) => {
   try {
     const { id } = req.params;
-    const month = dbGet('SELECT id, name, creator_id FROM months WHERE id = ?', [id]);
+    const month = await dbGet('SELECT id, name, creator_id FROM months WHERE id = ?', [id]);
     if (!month) return res.status(404).json({ error: 'Grupo no encontrado' });
 
-    const participants = dbAll('SELECT id, name, user_id FROM participants WHERE month_id = ?', [id]);
+    const participants = await dbAll('SELECT id, name, user_id FROM participants WHERE month_id = ?', [id]);
     
     // Devolvemos la info b\xE1sica y los cupos disponibles
     res.json({
@@ -66,20 +67,20 @@ router.get('/:id/invite', (req, res) => {
 });
 
 // POST /api/months/:id/join  →  Unirse a un  mes reclamando un puesto
-router.post('/:id/join', (req, res) => {
+router.post('/:id/join', async (req, res) => {
   try {
     const { id } = req.params;
     const { participantId } = req.body;
 
-    const slot = dbGet('SELECT * FROM participants WHERE id = ? AND month_id = ?', [participantId, id]);
+    const slot = await dbGet('SELECT * FROM participants WHERE id = ? AND month_id = ?', [participantId, id]);
     if (!slot) return res.status(404).json({ error: 'Ese participante no existe' });
     if (slot.user_id) return res.status(400).json({ error: 'Este perfil ya fue reclamado por alguien m\xE1s' });
 
     // Tambi\xE9n comprobamos si este usuario ya est\xE1 en el mes
-    const alreadyIn = dbGet('SELECT id FROM participants WHERE month_id = ? AND user_id = ?', [id, req.userId]);
+    const alreadyIn = await dbGet('SELECT id FROM participants WHERE month_id = ? AND user_id = ?', [id, req.userId]);
     if (alreadyIn) return res.status(400).json({ error: 'Ya eres parte de este grupo' });
 
-    dbRun('UPDATE participants SET user_id = ? WHERE id = ?', [req.userId, participantId]);
+    await dbRun('UPDATE participants SET user_id = ? WHERE id = ?', [req.userId, participantId]);
     res.json({ message: 'Te has unido exitosamente al grupo' });
   } catch (error) {
     res.status(500).json({ error: 'Error interno' });
@@ -96,19 +97,19 @@ router.post('/:id/invite-email', async (req, res) => {
       return res.status(400).json({ error: 'Email y link son obligatorios' });
     }
 
-    const sender = dbGet('SELECT name FROM users WHERE id = ?', [req.userId]);
+    const sender = await dbGet('SELECT name FROM users WHERE id = ?', [req.userId]);
     if (!sender) return res.status(401).json({ error: 'Usuario no encontrado' });
 
-    const month = dbGet('SELECT id, creator_id, name FROM months WHERE id = ?', [id]);
+    const month = await dbGet('SELECT id, creator_id, name FROM months WHERE id = ?', [id]);
     if (!month) return res.status(404).json({ error: 'Grupo no encontrado' });
 
-    const canAccessMonth = dbGet(
+    const canAccessMonth = (await dbGet(
       'SELECT id FROM months WHERE id = ? AND creator_id = ?',
       [id, req.userId]
-    ) || dbGet(
+    )) || (await dbGet(
       'SELECT id FROM participants WHERE month_id = ? AND user_id = ?',
       [id, req.userId]
-    );
+    ));
 
     if (!canAccessMonth) {
       return res.status(403).json({ error: 'No tienes permisos para invitar a este grupo' });
@@ -210,7 +211,7 @@ router.post('/:id/invite-email', async (req, res) => {
 });
 
 // POST /api/months  →  Crear un mes nuevo con N participantes iniciales
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { name, emoji, participants } = req.body;
     console.log('[DEBUG] Creando mes:', { name, emoji, participants, userId: req.userId });
@@ -226,20 +227,20 @@ router.post('/', (req, res) => {
     const monthId = Math.random().toString(36).substring(2, 9);
     
     // Insertar el mes
-    dbRun(
+    await dbRun(
       'INSERT INTO months (id, creator_id, name, emoji) VALUES (?, ?, ?, ?)',
       [monthId, req.userId, name, emoji || '📅']
     );
 
     // Insertar participantes
-    participants.forEach(p => {
+    for (const p of participants) {
       const pId = Math.random().toString(36).substring(2, 9);
       const mappedUserId = p.isMe ? req.userId : null;
-      dbRun(
+      await dbRun(
         'INSERT INTO participants (id, month_id, user_id, name, split_percentage) VALUES (?, ?, ?, ?, ?)',
         [pId, monthId, mappedUserId, p.name, p.splitPercentage || 0]
       );
-    });
+    }
 
     res.status(201).json({ id: monthId, message: 'Creado' });
   } catch (error) {
@@ -249,16 +250,16 @@ router.post('/', (req, res) => {
 });
 
 // PUT /api/months/:id  →  Actualizar el mes y reconfigurar proporciones
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { name, emoji, isClosed, participants } = req.body; // array de participants [{id, name, splitPercentage, user_id}]
     const { id } = req.params;
 
-    const month = dbGet('SELECT * FROM months WHERE id = ?', [id]);
+    const month = await dbGet('SELECT * FROM months WHERE id = ?', [id]);
     if (!month) return res.status(404).json({ error: 'Mes no encontrado' });
 
     const isCreator = month.creator_id === req.userId;
-    const isParticipant = !!dbGet('SELECT id FROM participants WHERE month_id = ? AND user_id = ?', [id, req.userId]);
+    const isParticipant = !!(await dbGet('SELECT id FROM participants WHERE month_id = ? AND user_id = ?', [id, req.userId]));
 
     if (!isCreator && !isParticipant) {
       return res.status(404).json({ error: 'Mes no encontrado o sin permisos' });
@@ -277,7 +278,7 @@ router.put('/:id', (req, res) => {
     }
 
     if (isCreator) {
-      dbRun(
+      await dbRun(
         'UPDATE months SET name = COALESCE(?, name), emoji = COALESCE(?, emoji), is_closed = COALESCE(?, is_closed) WHERE id = ?',
         [name || null, emoji || null, isClosed !== undefined ? (isClosed ? 1 : 0) : null, id]
       );
@@ -288,17 +289,17 @@ router.put('/:id', (req, res) => {
       // Borrar los que ya no est\xE1n en el arreglo
       const idsToKeep = participants.filter(p => p.id).map(p => `"${p.id}"`).join(',');
       if (idsToKeep) {
-         dbRun(`DELETE FROM participants WHERE month_id = ? AND id NOT IN (${idsToKeep})`, [id]);
+         await dbRun(`DELETE FROM participants WHERE month_id = ? AND id NOT IN (${idsToKeep})`, [id]);
       }
 
-      participants.forEach(p => {
+      for (const p of participants) {
         if (p.id) {
-          dbRun('UPDATE participants SET name = ?, split_percentage = ? WHERE id = ?', [p.name, p.splitPercentage, p.id]);
+          await dbRun('UPDATE participants SET name = ?, split_percentage = ? WHERE id = ?', [p.name, p.splitPercentage, p.id]);
         } else {
-          dbRun('INSERT INTO participants (id, month_id, user_id, name, split_percentage) VALUES (?, ?, ?, ?, ?)', 
+          await dbRun('INSERT INTO participants (id, month_id, user_id, name, split_percentage) VALUES (?, ?, ?, ?, ?)', 
           [Math.random().toString(36).substring(2, 9), id, p.userId || null, p.name, p.splitPercentage]);
         }
-      });
+      }
     }
 
     res.json({ message: 'Actualizado' });
@@ -309,15 +310,15 @@ router.put('/:id', (req, res) => {
 });
 
 // POST /api/months/:id/reassign  \u2192  Mover gastos de un participante a otro
-router.post('/:id/reassign', (req, res) => {
+router.post('/:id/reassign', async (req, res) => {
   try {
     const { id } = req.params;
     const { fromParticipantId, toParticipantId } = req.body;
 
-    const month = dbGet('SELECT * FROM months WHERE id = ? AND creator_id = ?', [id, req.userId]);
+    const month = await dbGet('SELECT * FROM months WHERE id = ? AND creator_id = ?', [id, req.userId]);
     if (!month) return res.status(404).json({ error: 'No tienes permisos' });
 
-    dbRun('UPDATE expenses SET payer_participant_id = ? WHERE month_id = ? AND payer_participant_id = ?', 
+    await dbRun('UPDATE expenses SET payer_participant_id = ? WHERE month_id = ? AND payer_participant_id = ?', 
       [toParticipantId, id, fromParticipantId]
     );
 
@@ -328,15 +329,15 @@ router.post('/:id/reassign', (req, res) => {
 });
 
 // DELETE /api/months/:id
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const month = dbGet('SELECT * FROM months WHERE id = ? AND creator_id = ?', [id, req.userId]);
+    const month = await dbGet('SELECT * FROM months WHERE id = ? AND creator_id = ?', [id, req.userId]);
     if (!month) return res.status(404).json({ error: 'Sin permisos' });
 
-    dbRun('DELETE FROM expenses WHERE month_id = ?', [id]);
-    dbRun('DELETE FROM participants WHERE month_id = ?', [id]);
-    dbRun('DELETE FROM months WHERE id = ?', [id]);
+    await dbRun('DELETE FROM expenses WHERE month_id = ?', [id]);
+    await dbRun('DELETE FROM participants WHERE month_id = ?', [id]);
+    await dbRun('DELETE FROM months WHERE id = ?', [id]);
     
     res.json({ message: 'Eliminado' });
   } catch (error) {
