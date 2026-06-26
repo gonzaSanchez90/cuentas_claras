@@ -22,9 +22,6 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Instalar dependencias del servidor
-        run: cd server && npm install
-
       - name: Exportar BD a JSON
         env:
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
