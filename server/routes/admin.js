@@ -19,10 +19,24 @@ router.get('/me', (req, res) => {
 
 router.get('/users', requireAdmin, async (req, res) => {
   try {
-    const users = await dbAll('SELECT id, email, name, created_at FROM users');
+    const users = await dbAll('SELECT id, email, name, created_at, expires_at FROM users');
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching users' });
+  }
+});
+
+router.patch('/users/:id/extend', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { days } = req.body;
+    const newExpiry = days
+      ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+      : null; // null = sin límite
+    await dbRun('UPDATE users SET expires_at = ? WHERE id = ?', [newExpiry, id]);
+    res.json({ message: 'Acceso actualizado', expires_at: newExpiry });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al actualizar acceso' });
   }
 });
 

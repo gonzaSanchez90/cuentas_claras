@@ -136,6 +136,13 @@ export async function deleteAdminUser(id: number) {
   return apiFetch(`/api/admin/users/${id}`, { method: 'DELETE' });
 }
 
+export async function extendUserAccess(id: number, days: number | null) {
+  return apiFetch(`/api/admin/users/${id}/extend`, {
+    method: 'PATCH',
+    body: JSON.stringify({ days }),
+  });
+}
+
 export async function sendEmailInvite(monthId: string, email: string, link: string) {
   return apiFetch(`/api/months/${monthId}/invite-email`, {
     method: 'POST',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, Users, ShieldOff } from 'lucide-react';
+import { ArrowLeft, Trash2, Users, ShieldOff, Clock, Infinity } from 'lucide-react';
 import * as api from '../services/apiService';
 
 const AdminPanel: React.FC = () => {
@@ -28,6 +28,25 @@ const AdminPanel: React.FC = () => {
     }
   };
 
+  const handleExtend = async (id: number, days: number | null) => {
+    try {
+      const result = await api.extendUserAccess(id, days);
+      setUsers(users.map(u => u.id === id ? { ...u, expires_at: result.expires_at } : u));
+      setMessage({ type: 'success', text: days ? `Acceso extendido ${days} días.` : 'Acceso permanente activado.' });
+    } catch (e: any) {
+      setMessage({ type: 'error', text: 'Error: ' + e.message });
+    }
+  };
+
+  const expiryStatus = (expires_at: string | null) => {
+    if (!expires_at) return { label: 'Permanente', color: 'text-emerald-400' };
+    const exp = new Date(expires_at);
+    const now = new Date();
+    if (exp < now) return { label: 'Expirado', color: 'text-rose-400' };
+    const days = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return { label: `${days}d restantes`, color: days <= 5 ? 'text-amber-400' : 'text-blue-400' };
+  };
+
   if (isAdmin === null) return (
     <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">Verificando acceso...</div>
   );
@@ -45,7 +64,7 @@ const AdminPanel: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <button onClick={() => window.location.href = '/'} className="p-3 bg-slate-800 rounded-xl hover:bg-slate-700 transition">
             <ArrowLeft size={18} />
@@ -58,30 +77,44 @@ const AdminPanel: React.FC = () => {
             {message.text}
           </div>
         )}
-        
-        <div className="bg-[#1e293b] rounded-3xl p-6 border border-slate-700 shadow-2xl">
+
+        <div className="bg-[#1e293b] rounded-3xl p-6 border border-slate-700 shadow-2xl overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-widest">
-                <th className="py-4">ID</th>
-                <th className="py-4">Nombre</th>
-                <th className="py-4">Email</th>
+                <th className="py-4 pr-4">Nombre</th>
+                <th className="py-4 pr-4">Email</th>
+                <th className="py-4 pr-4">Trial</th>
                 <th className="py-4 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {users.map(u => (
-                <tr key={u.id} className="border-b border-slate-800/50 hover:bg-slate-800/20">
-                  <td className="py-4 font-mono text-slate-500">{u.id}</td>
-                  <td className="py-4 font-bold">{u.name}</td>
-                  <td className="py-4 text-slate-300">{u.email}</td>
-                  <td className="py-4 text-right">
-                    <button onClick={() => handleDelete(u.id)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition">
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {users.map(u => {
+                const status = expiryStatus(u.expires_at);
+                return (
+                  <tr key={u.id} className="border-b border-slate-800/50 hover:bg-slate-800/20">
+                    <td className="py-4 pr-4 font-bold">{u.name}</td>
+                    <td className="py-4 pr-4 text-slate-300 text-sm">{u.email}</td>
+                    <td className={`py-4 pr-4 text-sm font-semibold ${status.color}`}>{status.label}</td>
+                    <td className="py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => handleExtend(u.id, 30)} title="Extender 30 días"
+                          className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition text-xs font-bold flex items-center gap-1">
+                          <Clock size={14} /> +30d
+                        </button>
+                        <button onClick={() => handleExtend(u.id, null)} title="Acceso permanente"
+                          className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition">
+                          <Infinity size={14} />
+                        </button>
+                        <button onClick={() => handleDelete(u.id)} title="Eliminar usuario"
+                          className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {users.length === 0 && <p className="text-center text-slate-500 py-8">No hay usuarios</p>}

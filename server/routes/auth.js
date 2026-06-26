@@ -7,6 +7,8 @@ import { dbRun, dbGet } from '../database.js';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'cuentas-claras-secret-key-2026';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'gonza.fede.sanchez@gmail.com';
+const TRIAL_DAYS = 30;
 
 // ============================================================
 // POST /api/auth/register  →  Crear cuenta nueva
@@ -29,9 +31,14 @@ router.post('/register', async (req, res) => {
     }
 
     const hashedPassword = bcrypt.hashSync(password, 10);
+    // Admin nunca expira; el resto tiene TRIAL_DAYS días de prueba
+    const expiresAt = email === ADMIN_EMAIL
+      ? null
+      : new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
     const result = await dbRun(
-      'INSERT INTO users (email, password, name) VALUES (?, ?, ?)',
-      [email, hashedPassword, name]
+      'INSERT INTO users (email, password, name, expires_at) VALUES (?, ?, ?, ?)',
+      [email, hashedPassword, name, expiresAt]
     );
 
     const userId = result.lastInsertRowid;
@@ -70,6 +77,10 @@ router.post('/login', async (req, res) => {
     const validPassword = bcrypt.compareSync(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    if (user.expires_at && new Date(user.expires_at) < new Date()) {
+      return res.status(403).json({ error: 'Tu período de prueba expiró. Contactá al administrador para continuar.' });
     }
 
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {

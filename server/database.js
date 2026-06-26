@@ -57,9 +57,11 @@ export async function initDatabase() {
 
     try {
       await tursoClient.execute("ALTER TABLE months ADD COLUMN emoji TEXT DEFAULT '📅'");
-    } catch (e) {
-      // Ignorar si la columna ya existe
-    }
+    } catch (e) { /* columna ya existe */ }
+
+    try {
+      await tursoClient.execute("ALTER TABLE users ADD COLUMN expires_at DATETIME");
+    } catch (e) { /* columna ya existe */ }
 
     await tursoClient.execute(`
       CREATE TABLE IF NOT EXISTS participants (
