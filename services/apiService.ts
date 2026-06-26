@@ -124,6 +124,10 @@ export async function reassignExpenses(monthId: string, fromParticipantId: strin
   });
 }
 
+export async function checkAdminAccess(): Promise<{ isAdmin: boolean }> {
+  return apiFetch('/api/admin/me');
+}
+
 export async function fetchAdminUsers() {
   return apiFetch('/api/admin/users');
 }

@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, Users } from 'lucide-react';
+import { ArrowLeft, Trash2, Users, ShieldOff } from 'lucide-react';
 import * as api from '../services/apiService';
 
 const AdminPanel: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
 
   useEffect(() => {
-    api.fetchAdminUsers().then(setUsers).catch(console.error);
+    api.checkAdminAccess()
+      .then(({ isAdmin }) => {
+        setIsAdmin(isAdmin);
+        if (isAdmin) api.fetchAdminUsers().then(setUsers).catch(console.error);
+      })
+      .catch(() => setIsAdmin(false));
   }, []);
 
   const handleDelete = async (id: number) => {
@@ -21,6 +27,21 @@ const AdminPanel: React.FC = () => {
       }
     }
   };
+
+  if (isAdmin === null) return (
+    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">Verificando acceso...</div>
+  );
+
+  if (!isAdmin) return (
+    <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center text-white gap-4">
+      <ShieldOff size={48} className="text-rose-500" />
+      <h2 className="text-xl font-bold">Acceso denegado</h2>
+      <p className="text-gray-400 text-sm">No tenés permisos para ver esta sección.</p>
+      <button onClick={() => window.location.href = '/'} className="mt-2 px-4 py-2 bg-slate-700 rounded-xl hover:bg-slate-600 transition text-sm">
+        Volver al inicio
+      </button>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white p-8">
