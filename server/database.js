@@ -6,6 +6,13 @@ import { createRequire } from 'module';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const _require = createRequire(import.meta.url);
+
+// Cargar variables de entorno desde la raiz del proyecto antes de evaluar process.env
+try {
+  const dotenv = _require('dotenv');
+  dotenv.config({ path: path.join(__dirname, '..', '.env') });
+} catch (e) { /* dotenv opcional */ }
+
 const dataDir = path.join(__dirname, 'data');
 const dbPath = path.join(dataDir, 'cuentas_claras.db');
 const legacyDbPath = path.join(__dirname, 'cuentas_claras.db');
