@@ -22,8 +22,8 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Instalar cliente Turso
-        run: npm install @libsql/client
+      - name: Instalar dependencias del servidor
+        run: cd server && npm install
 
       - name: Exportar BD a JSON
         env:

@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client';
+import { createClient } from './node_modules/@libsql/client/lib-esm/node.js';
 import fs from 'fs';
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
