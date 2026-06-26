@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
 import authMiddleware from '../middleware/auth.js';
 import { dbRun, dbGet } from '../database.js';
 
@@ -81,6 +82,93 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Error en login:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ============================================================
+// POST /api/auth/forgot-password  →  Enviar link de recuperación
+// ============================================================
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email requerido' });
+
+    const user = await dbGet('SELECT id, email, name FROM users WHERE email = ?', [email]);
+    // Siempre respondemos igual para no revelar qué emails existen
+    if (!user) return res.json({ message: 'Si el email existe, recibirás un enlace de recuperación' });
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, purpose: 'reset' },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const appUrl = `${req.protocol}://${req.get('host')}`;
+    const resetUrl = `${appUrl}?reset_token=${token}`;
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM,
+      to: user.email,
+      subject: 'Recuperar contraseña - Cuentas Claras',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:auto">
+          <h2>Hola ${user.name} 👋</h2>
+          <p>Recibiste este mail porque pediste recuperar tu contraseña en <strong>Cuentas Claras</strong>.</p>
+          <p style="margin:24px 0">
+            <a href="${resetUrl}"
+               style="background:#3b82f6;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">
+              Cambiar contraseña
+            </a>
+          </p>
+          <p style="color:#888;font-size:13px">El enlace expira en 1 hora. Si no pediste esto, ignorá este mail.</p>
+        </div>
+      `,
+    });
+
+    res.json({ message: 'Si el email existe, recibirás un enlace de recuperación' });
+  } catch (error) {
+    console.error('Error en forgot-password:', error);
+    res.status(500).json({ error: 'Error al enviar el email de recuperación' });
+  }
+});
+
+// ============================================================
+// POST /api/auth/reset-password  →  Cambiar contraseña con token
+// ============================================================
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) return res.status(400).json({ error: 'Token y nueva contraseña son requeridos' });
+    if (newPassword.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch {
+      return res.status(400).json({ error: 'El enlace es inválido o ya expiró' });
+    }
+
+    if (payload.purpose !== 'reset') return res.status(400).json({ error: 'Token inválido' });
+
+    const user = await dbGet('SELECT id FROM users WHERE id = ?', [payload.userId]);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+    await dbRun('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, payload.userId]);
+
+    res.json({ message: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    console.error('Error en reset-password:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
