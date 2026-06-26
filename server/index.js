@@ -41,20 +41,15 @@ app.use(cors());
 app.use(express.json());
 
 // ============================================================
-// Rutas de la API
+// Inicialización de BD para entornos Serverless (Vercel)
+// DEBE registrarse ANTES de las rutas para que la BD esté lista
+// cuando los handlers la usen.
 // ============================================================
-app.use('/api/public', publicRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/months', authMiddleware, monthRoutes);
-app.use('/api/expenses', authMiddleware, expenseRoutes);
-app.use('/api/admin', authMiddleware, adminRoutes);
-
-// Middleware para asegurar la inicialización de la BD en entornos Serverless (Vercel)
 let isDbInitialized = false;
 let dbInitPromise = null;
 
-app.use(async (req, res, next) => {
-  if (req.path.startsWith('/api') && !isDbInitialized) {
+app.use(async (_req, res, next) => {
+  if (!isDbInitialized) {
     if (!dbInitPromise) {
       dbInitPromise = initDatabase().then(() => {
         isDbInitialized = true;
@@ -64,10 +59,23 @@ app.use(async (req, res, next) => {
         throw err;
       });
     }
-    await dbInitPromise;
+    try {
+      await dbInitPromise;
+    } catch (err) {
+      return res.status(500).json({ error: 'Error al inicializar la base de datos' });
+    }
   }
   next();
 });
+
+// ============================================================
+// Rutas de la API
+// ============================================================
+app.use('/api/public', publicRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/months', authMiddleware, monthRoutes);
+app.use('/api/expenses', authMiddleware, expenseRoutes);
+app.use('/api/admin', authMiddleware, adminRoutes);
 
 // ============================================================
 // Servir el frontend en producción (solo si no es Vercel, ya que Vercel sirve static automáticamente)
