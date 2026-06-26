@@ -1,10 +1,13 @@
 import fs from 'fs';
-import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-config({ path: path.join(__dirname, '..', '.env') });
+// dotenv solo en local, en CI las vars vienen de los secrets
+try {
+  const { config } = await import('dotenv');
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  config({ path: path.join(__dirname, '..', '.env') });
+} catch { /* dotenv no disponible en CI, ignorar */ }
 
 const TURSO_URL = process.env.TURSO_DATABASE_URL?.replace('libsql://', 'https://');
 const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
