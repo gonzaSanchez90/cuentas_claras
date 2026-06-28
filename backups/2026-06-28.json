@@ -1,0 +1,581 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "email": "pepe@gmail.com",
+      "password": "$2a$10$1OBya19W5foEYsQglQKyieQSYbO3/19/AFcRdLpeY7F8Q8NibwUbm",
+      "name": "gonzalo",
+      "created_at": "2026-03-21 20:24:23"
+    },
+    {
+      "id": "2",
+      "email": "gonzalo@gmail.com",
+      "password": "$2a$10$opTVo.jhDiIcsUFycb3vL.4GW1Pevipv06E4pBJV13Cj7T8DU8YaK",
+      "name": "gonzalo",
+      "created_at": "2026-03-21 20:28:38"
+    },
+    {
+      "id": "3",
+      "email": "gosanchez90@gmail.com",
+      "password": "$2a$10$o2exmNgB0Evy8qOdPyd3FOZBCd8uLAd12m/XIVU982meYxQ5H6Ixi",
+      "name": "gonzalo",
+      "created_at": "2026-03-21 20:43:58"
+    },
+    {
+      "id": "4",
+      "email": "tester@email.com",
+      "password": "$2a$10$F82TKwsckdwb0Yvi756SLeuF262Ye5UdGKYodS2NNRWY0LSBHVvzW",
+      "name": "Tester",
+      "created_at": "2026-03-23 23:19:34"
+    },
+    {
+      "id": "5",
+      "email": "test@test.com",
+      "password": "$2a$10$rWCrDqQVhnF4QgVO/wNENuftcMZlNhY/p1kqX2RVdJzQg1zTgkzpC",
+      "name": "Test",
+      "created_at": "2026-03-29 10:23:43"
+    },
+    {
+      "id": "6",
+      "email": "asd@gmail.com",
+      "password": "$2a$10$390rJ3g5xJ6RxwbprRZeNODPbUyy1ri7XMF/9mhNC1.w7cESKzzJO",
+      "name": "pepe",
+      "created_at": "2026-03-29 10:43:45"
+    },
+    {
+      "id": "7",
+      "email": "test1@gmail.com",
+      "password": "$2a$10$XCw0NOv.Bh9kq4F1LwrqcODVRttRmmKoy13sR0WPDHoM0GAhyepeS",
+      "name": "test 1",
+      "created_at": "2026-03-29 11:02:57"
+    },
+    {
+      "id": "8",
+      "email": "migration_test@example.com",
+      "password": "$2a$10$T/OX4MgHr04hOGxfaqLEWOjzhsJ8h3OAtiMFgG/0bHJJZ3AKx8bsa",
+      "name": "Migration Test",
+      "created_at": "2026-06-26 19:21:22"
+    },
+    {
+      "id": "9",
+      "email": "gonza.fede.sanchez@gmail.com",
+      "password": "$2a$10$Onn1G/1OSFOPRKvJn1VoW.Sk90bTV7QtCZkNrsxCZb7UkNPNLNYvG",
+      "name": "Gonzalo",
+      "created_at": "2026-06-26 21:06:50"
+    }
+  ],
+  "months": [
+    {
+      "id": "r7gwfi4",
+      "creator_id": "0",
+      "name": "Marzo 2026",
+      "emoji": "📅",
+      "is_closed": "0",
+      "created_at": "2026-03-21 20:27:46"
+    },
+    {
+      "id": "fo8ezd2",
+      "creator_id": "0",
+      "name": "Marzo 2026",
+      "emoji": "📅",
+      "is_closed": "0",
+      "created_at": "2026-03-21 20:27:51"
+    },
+    {
+      "id": "ozzltba",
+      "creator_id": "0",
+      "name": "Marzo 2026",
+      "emoji": "📅",
+      "is_closed": "0",
+      "created_at": "2026-03-21 20:28:08"
+    },
+    {
+      "id": "q6fdfou",
+      "creator_id": "0",
+      "name": "Marzo 2026",
+      "emoji": "📅",
+      "is_closed": "0",
+      "created_at": "2026-03-21 20:28:44"
+    },
+    {
+      "id": "iaeegwu",
+      "creator_id": "1",
+      "name": "Marzo 2026",
+      "emoji": "📅",
+      "is_closed": "0",
+      "created_at": "2026-03-21 20:38:19"
+    },
+    {
+      "id": "wbsd5ju",
+      "creator_id": "0",
+      "name": "Marzo 2026",
+      "emoji": "📅",
+      "is_closed": "0",
+      "created_at": "2026-03-21 20:44:05"
+    },
+    {
+      "id": "p1ni7bm",
+      "creator_id": "2",
+      "name": "Marzo 2026",
+      "emoji": "📅",
+      "is_closed": "0",
+      "created_at": "2026-03-21 20:44:39"
+    },
+    {
+      "id": "4xx5ew9",
+      "creator_id": "2",
+      "name": "yertyret",
+      "emoji": "🛒",
+      "is_closed": "0",
+      "created_at": "2026-03-23 23:17:37"
+    },
+    {
+      "id": "1kd0cmb",
+      "creator_id": "4",
+      "name": "Test Month",
+      "emoji": "📅",
+      "is_closed": "0",
+      "created_at": "2026-03-23 23:21:32"
+    },
+    {
+      "id": "0n38sil",
+      "creator_id": "5",
+      "name": "Test Group",
+      "emoji": "📅",
+      "is_closed": "0",
+      "created_at": "2026-03-29 10:24:13"
+    },
+    {
+      "id": "3q8y8qs",
+      "creator_id": "8",
+      "name": "Vercel Migration Test",
+      "emoji": "🎉",
+      "is_closed": "0",
+      "created_at": "2026-06-26 19:22:29"
+    },
+    {
+      "id": "l5sax5w",
+      "creator_id": "9",
+      "name": "Junio",
+      "emoji": "📅",
+      "is_closed": "0",
+      "created_at": "2026-06-26 21:07:07"
+    },
+    {
+      "id": "25i5b42",
+      "creator_id": "9",
+      "name": "Junio",
+      "emoji": "📅",
+      "is_closed": "0",
+      "created_at": "2026-06-26 21:07:09"
+    }
+  ],
+  "participants": [
+    {
+      "id": "p6u089o",
+      "month_id": "r7gwfi4",
+      "user_id": "0",
+      "name": "gonzalo",
+      "split_percentage": 51.6,
+      "created_at": "2026-03-21 20:27:46"
+    },
+    {
+      "id": "n9avvkc",
+      "month_id": "r7gwfi4",
+      "user_id": null,
+      "name": "Sofi",
+      "split_percentage": 48.5,
+      "created_at": "2026-03-21 20:27:46"
+    },
+    {
+      "id": "x19ayxh",
+      "month_id": "r7gwfi4",
+      "user_id": null,
+      "name": "Compañero 3",
+      "split_percentage": 0,
+      "created_at": "2026-03-21 20:27:46"
+    },
+    {
+      "id": "fkr31ur",
+      "month_id": "fo8ezd2",
+      "user_id": "0",
+      "name": "Mi cuenta",
+      "split_percentage": 50,
+      "created_at": "2026-03-21 20:27:51"
+    },
+    {
+      "id": "i37tsxt",
+      "month_id": "fo8ezd2",
+      "user_id": null,
+      "name": "Sofi",
+      "split_percentage": 50,
+      "created_at": "2026-03-21 20:27:51"
+    },
+    {
+      "id": "qkf34vm",
+      "month_id": "ozzltba",
+      "user_id": "0",
+      "name": "Mi cuenta",
+      "split_percentage": 50,
+      "created_at": "2026-03-21 20:28:08"
+    },
+    {
+      "id": "caz6zez",
+      "month_id": "ozzltba",
+      "user_id": null,
+      "name": "Sofi",
+      "split_percentage": 50,
+      "created_at": "2026-03-21 20:28:08"
+    },
+    {
+      "id": "bfqtenb",
+      "month_id": "q6fdfou",
+      "user_id": "0",
+      "name": "Mi cuenta",
+      "split_percentage": 50,
+      "created_at": "2026-03-21 20:28:44"
+    },
+    {
+      "id": "9hsg4ww",
+      "month_id": "q6fdfou",
+      "user_id": null,
+      "name": "Sofi",
+      "split_percentage": 50,
+      "created_at": "2026-03-21 20:28:44"
+    },
+    {
+      "id": "k7mylkt",
+      "month_id": "iaeegwu",
+      "user_id": "1",
+      "name": "gonzalo",
+      "split_percentage": 50,
+      "created_at": "2026-03-21 20:38:19"
+    },
+    {
+      "id": "ea7fwtu",
+      "month_id": "iaeegwu",
+      "user_id": null,
+      "name": "Participante 2",
+      "split_percentage": 50,
+      "created_at": "2026-03-21 20:38:19"
+    },
+    {
+      "id": "kzr74j3",
+      "month_id": "wbsd5ju",
+      "user_id": "0",
+      "name": "gonzalo",
+      "split_percentage": 50,
+      "created_at": "2026-03-21 20:44:05"
+    },
+    {
+      "id": "27tbrlv",
+      "month_id": "wbsd5ju",
+      "user_id": null,
+      "name": "Participante 2",
+      "split_percentage": 50,
+      "created_at": "2026-03-21 20:44:05"
+    },
+    {
+      "id": "krcmuyw",
+      "month_id": "p1ni7bm",
+      "user_id": "2",
+      "name": "gonzalo",
+      "split_percentage": 80,
+      "created_at": "2026-03-21 20:44:39"
+    },
+    {
+      "id": "c0tcckx",
+      "month_id": "p1ni7bm",
+      "user_id": "7",
+      "name": "test 1",
+      "split_percentage": 15.7,
+      "created_at": "2026-03-21 20:44:39"
+    },
+    {
+      "id": "tta4czk",
+      "month_id": "p1ni7bm",
+      "user_id": null,
+      "name": "asdasd3",
+      "split_percentage": 4.3,
+      "created_at": "2026-03-23 20:22:51"
+    },
+    {
+      "id": "cdqz0nx",
+      "month_id": "4xx5ew9",
+      "user_id": "2",
+      "name": "gonzalo",
+      "split_percentage": 50,
+      "created_at": "2026-03-23 23:17:37"
+    },
+    {
+      "id": "b9a01fk",
+      "month_id": "4xx5ew9",
+      "user_id": null,
+      "name": "Participante 2",
+      "split_percentage": 30,
+      "created_at": "2026-03-23 23:17:37"
+    },
+    {
+      "id": "uatv5uu",
+      "month_id": "1kd0cmb",
+      "user_id": "4",
+      "name": "Tester",
+      "split_percentage": 50,
+      "created_at": "2026-03-23 23:21:32"
+    },
+    {
+      "id": "cd75vac",
+      "month_id": "1kd0cmb",
+      "user_id": null,
+      "name": "Participante 2Friend",
+      "split_percentage": 50,
+      "created_at": "2026-03-23 23:21:32"
+    },
+    {
+      "id": "7oxynhx",
+      "month_id": "0n38sil",
+      "user_id": "5",
+      "name": "Test",
+      "split_percentage": 50,
+      "created_at": "2026-03-29 10:24:13"
+    },
+    {
+      "id": "b0ysr5v",
+      "month_id": "0n38sil",
+      "user_id": null,
+      "name": "Participante 2",
+      "split_percentage": 50,
+      "created_at": "2026-03-29 10:24:13"
+    },
+    {
+      "id": "zfalhrh",
+      "month_id": "4xx5ew9",
+      "user_id": "7",
+      "name": "test 1",
+      "split_percentage": 20,
+      "created_at": "2026-03-29 11:03:40"
+    },
+    {
+      "id": "95obyov",
+      "month_id": "3q8y8qs",
+      "user_id": "8",
+      "name": "Sofi",
+      "split_percentage": 33,
+      "created_at": "2026-06-26 19:22:29"
+    },
+    {
+      "id": "07m9t1n",
+      "month_id": "3q8y8qs",
+      "user_id": null,
+      "name": "Gonza",
+      "split_percentage": 33,
+      "created_at": "2026-06-26 19:22:29"
+    },
+    {
+      "id": "rjd97ow",
+      "month_id": "3q8y8qs",
+      "user_id": null,
+      "name": "Juan",
+      "split_percentage": 34,
+      "created_at": "2026-06-26 19:22:29"
+    },
+    {
+      "id": "imoqn98",
+      "month_id": "l5sax5w",
+      "user_id": "9",
+      "name": "Gonzalo",
+      "split_percentage": 100,
+      "created_at": "2026-06-26 21:07:08"
+    },
+    {
+      "id": "dx8ioie",
+      "month_id": "25i5b42",
+      "user_id": "9",
+      "name": "Gonzalo",
+      "split_percentage": 100,
+      "created_at": "2026-06-26 21:07:09"
+    }
+  ],
+  "expenses": [
+    {
+      "id": "logflv1",
+      "month_id": "p1ni7bm",
+      "created_by": "2",
+      "payer_participant_id": "krcmuyw",
+      "title": "cena",
+      "amount": 123,
+      "date": "2026-03-21",
+      "category": "Salidas",
+      "note": null,
+      "created_at": "2026-03-21 20:59:27"
+    },
+    {
+      "id": "yrl0qdz",
+      "month_id": "p1ni7bm",
+      "created_by": "2",
+      "payer_participant_id": "krcmuyw",
+      "title": "super",
+      "amount": 1123,
+      "date": "2026-03-21",
+      "category": "Salidas",
+      "note": null,
+      "created_at": "2026-03-21 21:02:13"
+    },
+    {
+      "id": "hhzbrnr",
+      "month_id": "p1ni7bm",
+      "created_by": "2",
+      "payer_participant_id": "c0tcckx",
+      "title": "test",
+      "amount": 123,
+      "date": "2026-03-05",
+      "category": "Farmacia",
+      "note": null,
+      "created_at": "2026-03-23 20:22:35"
+    },
+    {
+      "id": "cr925jp",
+      "month_id": "p1ni7bm",
+      "created_by": "2",
+      "payer_participant_id": "tta4czk",
+      "title": "telefono celular",
+      "amount": 1123.07,
+      "date": "2026-03-23",
+      "category": "Teléfono",
+      "note": null,
+      "created_at": "2026-03-23 21:18:32"
+    },
+    {
+      "id": "nqigjmj",
+      "month_id": "p1ni7bm",
+      "created_by": "2",
+      "payer_participant_id": "c0tcckx",
+      "title": "asdasd",
+      "amount": 50,
+      "date": "2026-03-11",
+      "category": "Internet",
+      "note": null,
+      "created_at": "2026-03-23 23:06:12"
+    },
+    {
+      "id": "8ruwmu7",
+      "month_id": "p1ni7bm",
+      "created_by": "2",
+      "payer_participant_id": "krcmuyw",
+      "title": "qweqwe",
+      "amount": 45.7,
+      "date": "2026-03-23",
+      "category": "Agua",
+      "note": null,
+      "created_at": "2026-03-23 23:16:18"
+    },
+    {
+      "id": "dngo7en",
+      "month_id": "0n38sil",
+      "created_by": "5",
+      "payer_participant_id": "7oxynhx",
+      "title": "Dinner",
+      "amount": 50,
+      "date": "2026-03-29",
+      "category": "Varios",
+      "note": null,
+      "created_at": "2026-03-29 10:24:38"
+    },
+    {
+      "id": "l6d5x06",
+      "month_id": "4xx5ew9",
+      "created_by": "2",
+      "payer_participant_id": "cdqz0nx",
+      "title": "fsdfsdf",
+      "amount": 12,
+      "date": "2026-03-29",
+      "category": "Varios",
+      "note": null,
+      "created_at": "2026-03-29 10:27:05"
+    },
+    {
+      "id": "w3iigok",
+      "month_id": "4xx5ew9",
+      "created_by": "2",
+      "payer_participant_id": "cdqz0nx",
+      "title": "sdasdasd",
+      "amount": 45,
+      "date": "2026-03-29",
+      "category": "Supermercado",
+      "note": null,
+      "created_at": "2026-03-29 10:27:19"
+    },
+    {
+      "id": "yw6t45r",
+      "month_id": "4xx5ew9",
+      "created_by": "2",
+      "payer_participant_id": "cdqz0nx",
+      "title": "asdasd",
+      "amount": 65,
+      "date": "2026-03-29",
+      "category": "Farmacia",
+      "note": null,
+      "created_at": "2026-03-29 10:27:30"
+    },
+    {
+      "id": "ioy2dtw",
+      "month_id": "4xx5ew9",
+      "created_by": "2",
+      "payer_participant_id": "b9a01fk",
+      "title": "dsfsdfs",
+      "amount": 65,
+      "date": "2026-03-29",
+      "category": "Gastos del hogar",
+      "note": null,
+      "created_at": "2026-03-29 10:28:04"
+    },
+    {
+      "id": "ys9p2bi",
+      "month_id": "p1ni7bm",
+      "created_by": "7",
+      "payer_participant_id": "c0tcckx",
+      "title": "dfgdfg",
+      "amount": 123123,
+      "date": "2026-04-03",
+      "category": "Luz",
+      "note": null,
+      "created_at": "2026-03-29 11:04:33"
+    },
+    {
+      "id": "2n8n8lp",
+      "month_id": "p1ni7bm",
+      "created_by": "7",
+      "payer_participant_id": "c0tcckx",
+      "title": "asdasd",
+      "amount": 123123,
+      "date": "2026-03-12",
+      "category": "Transporte",
+      "note": null,
+      "created_at": "2026-03-29 11:05:30"
+    },
+    {
+      "id": "5oky0xq",
+      "month_id": "3q8y8qs",
+      "created_by": "8",
+      "payer_participant_id": "07m9t1n",
+      "title": "Dinner",
+      "amount": 1500,
+      "date": "2026-06-26",
+      "category": "Varios",
+      "note": null,
+      "created_at": "2026-06-26 19:23:28"
+    },
+    {
+      "id": "62bjzcd",
+      "month_id": "25i5b42",
+      "created_by": "9",
+      "payer_participant_id": "dx8ioie",
+      "title": "asdasd",
+      "amount": 123,
+      "date": "2026-06-26",
+      "category": "Varios",
+      "note": null,
+      "created_at": "2026-06-26 21:07:27"
+    }
+  ]
+}
